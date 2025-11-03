@@ -8,7 +8,8 @@ import zio.stream.ZStream
 object Activator:
   import ZIO.*
 
-  case object Toggle
+  enum Message:
+    case Toggle
 
   trait GlobalKeyListener:
     def start: NativeKeyListener => UIO[Unit]
@@ -38,7 +39,7 @@ object Activator:
           _ <- succeed(GlobalScreen.unregisterNativeHook()) *> succeed(GlobalScreen.removeNativeKeyListener(listener))
         yield ()
 
-  val stream: ZStream[GlobalKeyListener, Nothing, Toggle.type] = ZStream.asyncScoped: cb =>
+  val stream: ZStream[GlobalKeyListener, Nothing, Message] = ZStream.asyncScoped: cb =>
     for
       _ <- debug("start listen global key")
       pressedKeys <- Ref.make(0)
@@ -53,7 +54,7 @@ object Activator:
                     pressedKeys
                       .updateAndGet(_ | code)
                       .map:
-                        case v if v == allPressed => Chunk.single(Toggle)
+                        case v if v == allPressed => Chunk.single(Message.Toggle)
                         case _ => Chunk.empty
                   }
                   case _ => ()

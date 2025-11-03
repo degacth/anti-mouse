@@ -7,7 +7,7 @@ import stubs.GlobalKeyListenerStub
 object ActivatorSpec extends ZIOSpecDefault:
   import ZIO.*
 
-  private def withActivator(f: GlobalKeyListenerStub => UIO[Unit]): URIO[GlobalKeyListenerStub, Chunk[Activator.Toggle.type]] =
+  private def withActivator(f: GlobalKeyListenerStub => UIO[Unit]): URIO[GlobalKeyListenerStub, Chunk[Activator.Message]] =
     val streamTimeout = 10
     for
       fiber <- Activator.stream.timeout(streamTimeout.millis).runCollect.fork
@@ -23,7 +23,7 @@ object ActivatorSpec extends ZIOSpecDefault:
         stub.pressed(Activator.pressToToggle.init *) *>
           stub.pressed(Activator.pressToToggle.last)
       }
-        .map(act => assertTrue(act == Chunk.single(Activator.Toggle)))
+        .map(act => assertTrue(act == Chunk.single(Activator.Message.Toggle)))
     ,
 
     test("should not emit toggle"):
