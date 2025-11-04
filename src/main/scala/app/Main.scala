@@ -6,7 +6,8 @@ import zio.*
 object Main extends ZIOAppDefault:
   private val application =
     for
-      _ <- (Activator.toggler >>> Window.activator).runDrain
+      _ <- (Activator.toggler >>> Window.activator).runDrain.fork
+      _ <- Window.keyboardStream.runDrain
     yield ()
 
   override def run: Task[ExitCode] = ZIO.scoped:
