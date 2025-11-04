@@ -12,8 +12,8 @@ object Activator:
     case Toggle
 
   trait GlobalKeyListener:
-    def start: NativeKeyListener => UIO[Unit]
-    def stop: UIO[Unit]
+    def start: NativeKeyListener => Task[Unit]
+    def stop: Task[Unit]
 
   object GlobalKeyListener:
     val empty: NativeKeyListener = new NativeKeyListener {}
@@ -26,20 +26,21 @@ object Activator:
 
   private val allPressed: Int = pressToToggleByCodes.values.fold(0)(_ | _)
 
-  val live: ULayer[GlobalKeyListener] = ZLayer.succeed:
-    val listenerRef = Ref.make(GlobalKeyListener.empty)
-    new GlobalKeyListener:
-      override def start: NativeKeyListener => UIO[Unit] = l => listenerRef.flatMap(_.set(l)) *>
-        succeed(GlobalScreen.registerNativeHook()) *>
-        succeed(GlobalScreen.addNativeKeyListener(l))
+  val live: TaskLayer[GlobalKeyListener] = ZLayer.fromZIO:
+    for
+      listener <- Ref.make(GlobalKeyListener.empty)
+    yield new GlobalKeyListener:
+      override def start: NativeKeyListener => Task[Unit] = l =>
+        listener.set(l) *>
+          attempt(GlobalScreen.registerNativeHook()) *>
+          attempt(GlobalScreen.addNativeKeyListener(l))
 
-      override def stop: UIO[Unit] =
-        for
-          listener <- listenerRef.flatMap(_.get)
-          _ <- succeed(GlobalScreen.unregisterNativeHook()) *> succeed(GlobalScreen.removeNativeKeyListener(listener))
-        yield ()
+      override def stop: Task[Unit] =
+        listener.get.flatMap: l =>
+          attempt(GlobalScreen.unregisterNativeHook()) *>
+            attempt(GlobalScreen.removeNativeKeyListener(l))
 
-  val stream: ZStream[GlobalKeyListener, Nothing, Message] = ZStream.asyncScoped: cb =>
+  val stream: ZStream[GlobalKeyListener, Throwable, Message] = ZStream.asyncScoped: cb =>
     for
       _ <- debug("start listen global key")
       pressedKeys <- Ref.make(0)
@@ -66,5 +67,5 @@ object Activator:
                   }
                   case _ => ()
         yield gkl
-      }(_.stop *> debug("stop listen global key"))
+      }(_.stop.orDie *> debug("stop listen global key"))
     yield ()

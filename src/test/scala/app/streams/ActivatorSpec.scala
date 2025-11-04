@@ -10,7 +10,7 @@ object ActivatorSpec extends ZIOSpecDefault:
   private def withActivator(f: GlobalKeyListenerStub => UIO[Unit]): URIO[GlobalKeyListenerStub, Chunk[Activator.Message]] =
     val streamTimeout = 10
     for
-      fiber <- Activator.stream.timeout(streamTimeout.millis).runCollect.fork
+      fiber <- Activator.stream.timeout(streamTimeout.millis).runCollect.orDie.fork
       stub <- service[GlobalKeyListenerStub]
       _ <- f(stub).delay(1.millis).fork
       _ <- TestClock.adjust((streamTimeout + 1).millis)
