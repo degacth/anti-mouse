@@ -1,18 +1,21 @@
 package app
 
-import app.streams.Activator
+import app.streams.{Activator, Window}
 import zio.*
 
 object Main extends ZIOAppDefault:
   private val application =
     for
-      _ <- Activator.stream.foreach(n => ZIO.debug(n))
+      _ <- (Activator.toggler >>> Window.activator).runDrain
     yield ()
 
   override def run: Task[ExitCode] = ZIO.scoped:
     for
       fiber <- application
-        .provideLayer(Activator.live)
+        .provide(
+          Activator.globalKeyListener,
+          Window.frame,
+        )
         .fork
       _ <- Console.readLine
       _ <- fiber.interrupt
