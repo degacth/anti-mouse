@@ -15,6 +15,7 @@ lazy val root = project
       "dev.zio" %% "zio-streams" % zioVersion,
       "com.github.kwhat" % "jnativehook" % "2.2.2",
 
+      "dev.zio" %% "zio-test" % zioVersion % Test,
       "dev.zio" %% "zio-test-sbt" % zioVersion % Test,
       "dev.zio" %% "zio-test-magnolia" % zioVersion % Test,
     )

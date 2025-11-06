@@ -13,6 +13,15 @@ object Window:
   private enum FrameState:
     case Shown, Hidden
 
+  abstract case class Key(code: Int)
+
+  object Key:
+    class Pressed(code: Int) extends Key(code)
+    class Released(code: Int) extends Key(code)
+
+    def pressed(c: Int): Key = Pressed(c)
+    def released(c: Int): Key = Released(c)
+
   trait Service:
     def show: UIO[Unit]
     def hide: UIO[Unit]
@@ -46,11 +55,9 @@ object Window:
     case (FrameState.Hidden, _) => service[Service].flatMap(_.show.map(_ => (FrameState.Shown, ())))
     case (FrameState.Shown, _) => service[Service].flatMap(_.hide.map(_ => (FrameState.Hidden, ())))
 
-  val keyboardStream: ZStream[Service, Throwable, Any] =
-    ZStream.asyncZIO[Service, Throwable, Any]: cb =>
+  val keyboardStream: ZStream[Service, Throwable, Key] =
+    ZStream.asyncZIO[Service, Throwable, Key]: cb =>
       serviceWithZIO[Service](_.listen(new KeyAdapter {
-        override def keyPressed(e: KeyEvent): Unit = cb.single(e.getKeyCode)
+        override def keyPressed(e: KeyEvent): Unit = cb.single(Key.pressed(e.getKeyCode))
+        override def keyReleased(e: KeyEvent): Unit = cb.single(Key.released(e.getKeyCode))
       }))
-
-    .tap(debug(_))
-
