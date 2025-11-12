@@ -3,6 +3,7 @@ package app.streams
 import zio.*
 import zio.test.*
 import stubs.GlobalKeyListenerStub
+import zio.stream.{ZPipeline, ZSink, ZStream}
 
 object ActivatorSpec extends ZIOSpecDefault:
   import ZIO.*
@@ -49,5 +50,18 @@ object ActivatorSpec extends ZIOSpecDefault:
           stub.pressed(twoButtons *)
       }
         .map(act => assertTrue(act == Chunk.empty))
+    ,
+
+    test("split stream"):
+      for
+        result <- ZStream
+          .iterate(0)(_ + 1)
+          .take(10)
+          .groupByKey(_ % 3) {
+            case (k, s) => s.mapZIO(_ => unit)
+          }
+          .runCollect
+      yield assertTrue(result == Chunk.fill(10)(()))
+    ,
   )
     .provideLayer(GlobalKeyListenerStub.live)

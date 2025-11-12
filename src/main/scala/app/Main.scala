@@ -1,17 +1,21 @@
 package app
 
-import app.layer.{Emulator, Screen}
+import app.layer.{Emulator, Move, Screen}
 import app.streams.{Activator, Mouse, Window}
 import zio.*
-import zio.stream.ZStream
+import zio.stream.{ZPipeline, ZStream}
 
 object Main extends ZIOAppDefault:
   private val application = {
     (Activator.toggler >>> Window.activator).merge:
-      Window.keyboardStream >>> Mouse.keysToMouse
+      Window.keyboardStream
+        .groupByKey(Mouse.streamKeyResolver): (k, s) =>
+          Mouse.handlers
+            .get(k)
+            .fold(s >>> ZPipeline.mapZIO(m => ZIO.debug(s"unhandled key $k with message $m")))
+            .apply(_(s))
   }
-    .catchAll(e => ZStream.fromZIO(ZIO.debug(e.getMessage)))
-    .tap(ZIO.debug(_))
+    .catchAllCause(c => ZStream.fromZIO(ZIO.debug(c.prettyPrint)))
     .runDrain
 
   override def run: Task[ExitCode] = ZIO.scoped:
@@ -23,6 +27,9 @@ object Main extends ZIOAppDefault:
           Emulator.live,
           Screen.live,
           Screen.display,
+          Move.live,
+          ZLayer.succeed(Move.speed(2)),
+          ZLayer.succeed(Move.rate(20)),
         )
         .catchAll(ZIO.debug(_))
         .fork

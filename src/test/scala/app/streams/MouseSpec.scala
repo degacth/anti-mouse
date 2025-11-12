@@ -1,8 +1,8 @@
 package app.streams
 
-import zio.*
-import ZIO.*
 import utils.Specs
+import zio.*
+import zio.ZIO.*
 import zio.test.*
 
 import java.awt.event.KeyEvent.*

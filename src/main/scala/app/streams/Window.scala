@@ -1,5 +1,6 @@
 package app.streams
 
+import app.domain.Key
 import zio.*
 import zio.stream.*
 
@@ -12,15 +13,6 @@ object Window:
 
   private enum FrameState:
     case Shown, Hidden
-
-  abstract case class Key(code: Int)
-
-  object Key:
-    class Pressed(code: Int) extends Key(code)
-    class Released(code: Int) extends Key(code)
-
-    def pressed(c: Int): Key = Pressed(c)
-    def released(c: Int): Key = Released(c)
 
   trait Service:
     def show: UIO[Unit]
