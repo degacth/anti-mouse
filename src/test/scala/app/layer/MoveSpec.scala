@@ -60,9 +60,10 @@ object MoveSpec extends ZIOSpecDefault:
         modif <- service[Modification.Service]
         _ <- modif.on(Modification.Mode.Shift)
         _ <- modif.on(Modification.Mode.Ctrl)
+        _ <- modif.off(Modification.Mode.Ctrl)
         _ <- TestClock.adjust(200.millis)
         (x, _) <- mock.moved
-      yield assertTrue(x == -2)
+      yield assertTrue(x == -3)
     ,
   )
     .provide(

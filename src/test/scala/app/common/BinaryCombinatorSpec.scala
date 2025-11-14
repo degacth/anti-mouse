@@ -6,6 +6,7 @@ import zio.test.*
 
 object BinaryCombinatorSpec extends ZIOSpecDefault:
   import BinaryCombinator.*
+
   import utils.Specs.*
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("binary combinator spec")(
@@ -41,4 +42,11 @@ object BinaryCombinatorSpec extends ZIOSpecDefault:
       )): (b, s) =>
         succeed(b ?& s)
     ,
+
+    test("should add and remove state"):
+      succeed(0)
+        .map(2 +& _)
+        .map(4 +& _)
+        .map(2 -& _)
+        .flatMap(act => assertTrue(act == 4))
   )

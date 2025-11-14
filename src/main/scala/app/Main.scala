@@ -29,8 +29,8 @@ object Main extends ZIOAppDefault:
           Screen.display,
           Move.live,
           Modification.live,
-          ZLayer.succeed(Move.speed(2)),
-          ZLayer.succeed(Move.rate(20)),
+          ZLayer.succeed(Move.speed(3)),
+          ZLayer.succeed(Move.rate(16)),
         )
         .catchAll(ZIO.debug(_))
         .fork
