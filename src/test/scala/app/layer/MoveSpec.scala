@@ -57,10 +57,10 @@ object MoveSpec extends ZIOSpecDefault:
         (x, _) <- mock.moved
         _ <- assertTrue(x == -1)
 
-        modif <- service[Modification.Service]
-        _ <- modif.on(Modification.Mode.Shift)
-        _ <- modif.on(Modification.Mode.Ctrl)
-        _ <- modif.off(Modification.Mode.Ctrl)
+        modif <- service[Modificator.Service]
+        _ <- modif.on(Modificator.Mode.Shift)
+        _ <- modif.on(Modificator.Mode.Ctrl)
+        _ <- modif.off(Modificator.Mode.Ctrl)
         _ <- TestClock.adjust(200.millis)
         (x, _) <- mock.moved
       yield assertTrue(x == -3)
@@ -71,7 +71,7 @@ object MoveSpec extends ZIOSpecDefault:
       speed(1),
       Move.live,
       MovePageObject.live,
-      Modification.live,
+      Modificator.live,
     )
 
 val rate: Int => ULayer[Move.Rate] = n => ZLayer.succeed(Move.rate(n))

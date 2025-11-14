@@ -1,7 +1,7 @@
 package app.streams
 
 import app.domain.Key
-import app.layer.{Emulator, Modification, Move, Screen}
+import app.layer.{Emulator, Modificator, Move, Screen}
 import zio.*
 import zio.stream.ZStream
 
@@ -27,9 +27,9 @@ object Mouse:
   )
 
   private val modifications = Map(
-    VK_ALT -> Modification.Mode.Alt,
-    VK_CONTROL -> Modification.Mode.Ctrl,
-    VK_SHIFT -> Modification.Mode.Shift,
+    VK_ALT -> Modificator.Mode.Alt,
+    VK_CONTROL -> Modificator.Mode.Ctrl,
+    VK_SHIFT -> Modificator.Mode.Shift,
   )
   private val modificationKeys = Chunk.fromIterable(modifications.keys)
   private val moveKeys = Chunk.fromIterable(moveDirections.keys)
@@ -45,7 +45,7 @@ object Mouse:
     case k: Key if modificationKeys.contains(k.code) => MouseEvents.Modificator
     case _ => MouseEvents.Mute
 
-  private type OutDeps = Screen.Service & Emulator.Service & Screen.Display & Modification.Service
+  private type OutDeps = Screen.Service & Emulator.Service & Screen.Display & Modificator.Service
 
   def handlers: Map[MouseEvents, ZStream[Any, Throwable, Key] => ZStream[OutDeps, Throwable, Any]] = Map(
     MouseEvents.FastMove -> (_.changes.mapZIO: pressed => // TODO why just pressed
@@ -70,8 +70,8 @@ object Mouse:
     MouseEvents.Modificator -> (
       _
         .tap:
-          case Key.Pressed(code) => serviceWithZIO[Modification.Service](s => modifications.get(code).fold(unit)(s.on))
-          case Key.Released(code) => serviceWithZIO[Modification.Service](s => modifications.get(code).fold(unit)(s.off))
+          case Key.Pressed(code) => serviceWithZIO[Modificator.Service](s => modifications.get(code).fold(unit)(s.on))
+          case Key.Released(code) => serviceWithZIO[Modificator.Service](s => modifications.get(code).fold(unit)(s.off))
       ),
 
     MouseEvents.Mute -> (_.drain)

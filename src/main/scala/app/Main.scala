@@ -1,6 +1,6 @@
 package app
 
-import app.layer.{Emulator, Modification, Move, Screen}
+import app.layer.{Emulator, Modificator, Move, Screen}
 import app.streams.{Activator, Mouse, Window}
 import zio.*
 import zio.stream.{ZPipeline, ZStream}
@@ -28,7 +28,7 @@ object Main extends ZIOAppDefault:
           Screen.live,
           Screen.display,
           Move.live,
-          Modification.live,
+          Modificator.live,
           ZLayer.succeed(Move.speed(3)),
           ZLayer.succeed(Move.rate(16)),
         )

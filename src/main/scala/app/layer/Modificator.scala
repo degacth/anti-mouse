@@ -3,7 +3,7 @@ package app.layer
 import zio.*
 import ZIO.*
 
-object Modification:
+object Modificator:
   import app.common.BinaryCombinator.*
 
   enum Mode:

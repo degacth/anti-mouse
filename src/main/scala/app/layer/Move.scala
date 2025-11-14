@@ -34,7 +34,7 @@ object Move:
     def run(d: Direction, z: (Int, Int) => UIO[Unit]): UIO[Unit]
     def stop(d: Direction): UIO[Unit]
 
-  private type Deps = Speed & Rate & Modification.Service
+  private type Deps = Speed & Rate & Modificator.Service
 
   private enum SpeedMod:
     case Slow, Normal, Fast, Faster
@@ -51,12 +51,12 @@ object Move:
     val empty: State = State(0, 0, 0, SpeedMod.Normal)
 
   val live: URLayer[Deps, Service] = ZLayer.scoped:
-    import Modification.Mode.*
+    import Modificator.Mode.*
     for
       state <- Ref.make(State.empty)
       speed <- service[Speed]
       rate <- service[Rate]
-      modificator <- service[Modification.Service]
+      modificator <- service[Modificator.Service]
       _ <- ZStream.fromQueue(modificator.watch)
         .runForeach: m =>
           state.update(_.copy(speedMod = m match
