@@ -46,13 +46,31 @@ object MoveSpec extends ZIOSpecDefault:
       yield assertTrue(actual == (-3, 0))
     }
       .provideLayer:
-      speed(3) >>> Move.live >>> MovePageObject.live
+        speed(3) >>> Move.live >>> MovePageObject.live
+    ,
+
+    test("should increase speed dynamically"):
+      for
+        mock <- service[MovePageObject.Service]
+        _ <- mock.left.fork
+        _ <- TestClock.adjust(200.millis)
+        (x, _) <- mock.moved
+        _ <- assertTrue(x == -1)
+
+        modif <- service[Modification.Service]
+        _ <- modif.on(Modification.Mode.Shift)
+        _ <- modif.on(Modification.Mode.Ctrl)
+        _ <- TestClock.adjust(200.millis)
+        (x, _) <- mock.moved
+      yield assertTrue(x == -2)
+    ,
   )
     .provide(
       rate(100),
       speed(1),
       Move.live,
       MovePageObject.live,
+      Modification.live,
     )
 
 val rate: Int => ULayer[Move.Rate] = n => ZLayer.succeed(Move.rate(n))

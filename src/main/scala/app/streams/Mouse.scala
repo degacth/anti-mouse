@@ -1,7 +1,7 @@
 package app.streams
 
 import app.domain.Key
-import app.layer.{Emulator, Move, Screen}
+import app.layer.{Emulator, Modification, Move, Screen}
 import zio.*
 import zio.stream.ZStream
 
@@ -11,7 +11,7 @@ object Mouse:
   import java.awt.event.KeyEvent.*
 
   enum MouseEvents:
-    case FastMove, DirectionMove, Click, Mute
+    case FastMove, DirectionMove, Click, Modificator, Mute
 
   private val fastMoveKeys: Chunk[Chunk[Int]] = Chunk(
     Chunk(VK_Q, VK_W, VK_E, VK_R),
@@ -26,6 +26,12 @@ object Mouse:
     VK_L -> Move.Direction.right,
   )
 
+  private val modifications = Map(
+    VK_ALT -> Modification.Mode.Alt,
+    VK_CONTROL -> Modification.Mode.Ctrl,
+    VK_SHIFT -> Modification.Mode.Shift,
+  )
+  private val modificationKeys = Chunk.fromIterable(modifications.keys)
   private val moveKeys = Chunk.fromIterable(moveDirections.keys)
 
   private val fastMoveKeysFlatten: Chunk[Int] = fastMoveKeys.flatten
@@ -36,9 +42,10 @@ object Mouse:
   val streamKeyResolver: Key => MouseEvents =
     case Key.Pressed(code) if isFastMove(code) => MouseEvents.FastMove
     case k: Key if isMoveKey(k.code) => MouseEvents.DirectionMove
+    case k: Key if modificationKeys.contains(k.code) => MouseEvents.Modificator
     case _ => MouseEvents.Mute
 
-  private type OutDeps = Screen.Service & Emulator.Service & Screen.Display
+  private type OutDeps = Screen.Service & Emulator.Service & Screen.Display & Modification.Service
 
   def handlers: Map[MouseEvents, ZStream[Any, Throwable, Key] => ZStream[OutDeps, Throwable, Any]] = Map(
     MouseEvents.FastMove -> (_.changes.mapZIO: pressed => // TODO why just pressed
@@ -58,6 +65,13 @@ object Mouse:
           case Key.Released(code) =>
             serviceWithZIO[Emulator.Service]:
               _.moveStop(moveDirections.getOrElse(code, Move.Direction.empty))
+      ),
+
+    MouseEvents.Modificator -> (
+      _
+        .tap:
+          case Key.Pressed(code) => serviceWithZIO[Modification.Service](s => modifications.get(code).fold(unit)(s.on))
+          case Key.Released(code) => serviceWithZIO[Modification.Service](s => modifications.get(code).fold(unit)(s.off))
       ),
 
     MouseEvents.Mute -> (_.drain)

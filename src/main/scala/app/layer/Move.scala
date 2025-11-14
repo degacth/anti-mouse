@@ -1,6 +1,7 @@
 package app.layer
 
 import zio.*
+import zio.stream.ZStream
 
 object Move:
   import ZIO.*
@@ -18,7 +19,6 @@ object Move:
     private case Left extends Direction(-1, 0, 1 << 3)
     private case Empty extends Direction(0, 0, 0)
 
-    val direction: (Int, Int) = (x, y)
     val save: Int => Int = _ | bindex
     val remove: Int => Int = s => s ^ bindex
     val in: Int => Boolean = n => (n & bindex) != 0
@@ -34,32 +34,61 @@ object Move:
     def run(d: Direction, z: (Int, Int) => UIO[Unit]): UIO[Unit]
     def stop(d: Direction): UIO[Unit]
 
-  val live: URLayer[Speed & Rate, Service] = ZLayer.scoped:
+  private type Deps = Speed & Rate & Modification.Service
+
+  private enum SpeedMod:
+    case Slow, Normal, Fast, Faster
+
+    lazy val speed: Double = this match
+      case Slow => .6
+      case Normal => 1
+      case Fast => 2
+      case Faster => 3
+
+  private case class State(x: Int, y: Int, dir: Int, speedMod: SpeedMod)
+
+  private object State:
+    val empty: State = State(0, 0, 0, SpeedMod.Normal)
+
+  val live: URLayer[Deps, Service] = ZLayer.scoped:
+    import Modification.Mode.*
     for
-      directions <- Ref.make((0, (0, 0)))
+      state <- Ref.make(State.empty)
       speed <- service[Speed]
       rate <- service[Rate]
+      modificator <- service[Modification.Service]
+      _ <- ZStream.fromQueue(modificator.watch)
+        .runForeach: m =>
+          state.update(_.copy(speedMod = m match
+            case m if hasModes(m, Shift, Ctrl) => SpeedMod.Fast
+            case m if hasModes(m, Shift) => SpeedMod.Faster
+            case m if hasModes(m, Ctrl) => SpeedMod.Slow
+            case _ => SpeedMod.Normal
+          ))
+        .fork
     yield
       new Service:
         private def execute(z: (Int, Int) => UIO[Unit]): UIO[Unit] =
           for
-            (s, (x, y)) <- directions.get
+            State(x, y, dir, speedMod) <- state.get
             _ <-
-              if s == 0 then unit
-              else z(x * speed.v, y * speed.v) *> sleep(rate.v.millis) *> execute(z)
+              if dir == 0 then unit
+              else z((x * speed.v * speedMod.speed).toInt, (y * speed.v * speedMod.speed).toInt) *>
+                sleep(rate.v.millis) *>
+                execute(z)
           yield ()
 
         override def run(d: Direction, z: (Int, Int) => UIO[Unit]): UIO[Unit] =
           for
-            (s, _) <- directions.getAndUpdate:
-              case (state, (x, y)) if !(d in state) => (d save state, (x + d.x, y + d.y))
+            State(_, _, dir, _) <- state.getAndUpdate:
+              case s@State(x, y, dir, _) if !(d in dir) => s.copy(x = x + d.x, y = y + d.y, dir = d save dir)
               case s => s
-            _ <- if s == 0 then execute(z) else unit
+            _ <- if dir == 0 then execute(z) else unit
           yield ()
 
         override def stop(d: Direction): UIO[Unit] =
           for
-            _ <- directions.update:
-              case (state, (x, y)) if d in state => (d remove state, (x - d.x, y - d.y))
+            _ <- state.update:
+              case s@State(x, y, dir, _) if d in dir => s.copy(x = x - d.x, y = y - d.y, dir = d remove dir)
               case m => m
           yield ()
