@@ -10,6 +10,8 @@ object Activator:
 
   enum Message:
     case Toggle
+    case Activate
+    case Deactivate
 
   trait GlobalKeyListener:
     def start: NativeKeyListener => Task[Unit]

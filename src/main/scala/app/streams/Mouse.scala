@@ -43,12 +43,13 @@ object Mouse:
     case Key.Pressed(code) if isFastMove(code) => MouseEvents.FastMove
     case k: Key if isMoveKey(k.code) => MouseEvents.DirectionMove
     case k: Key if modificationKeys.contains(k.code) => MouseEvents.Modificator
+    case k: Key if k.code == VK_ENTER => MouseEvents.Click
     case _ => MouseEvents.Mute
 
-  private type OutDeps = Screen.Service & Emulator.Service & Screen.Display & Modificator.Service
+  private type OutDeps = Screen.Service & Emulator.Service & Screen.Display & Modificator.Service & Window.Service
 
   def handlers: Map[MouseEvents, ZStream[Any, Throwable, Key] => ZStream[OutDeps, Throwable, Any]] = Map(
-    MouseEvents.FastMove -> (_.changes.mapZIO: pressed => // TODO why just pressed
+    MouseEvents.FastMove -> (_.changes.tap: pressed =>
       for
         (x, y) <- serviceWithZIO[Screen.Service]:
           _.screenPart(fastMoveDimension, fastMovePointByKey(pressed.code))
@@ -56,15 +57,13 @@ object Mouse:
       yield pressed
       ),
 
-    MouseEvents.DirectionMove -> (
-      _
-        .tap:
-          case Key.Pressed(code) =>
-            serviceWithZIO[Emulator.Service]:
-              _.moveStart(moveDirections.getOrElse(code, Move.Direction.empty)).fork *> unit
-          case Key.Released(code) =>
-            serviceWithZIO[Emulator.Service]:
-              _.moveStop(moveDirections.getOrElse(code, Move.Direction.empty))
+    MouseEvents.DirectionMove -> (_.changes.tap:
+      case Key.Pressed(code) =>
+        serviceWithZIO[Emulator.Service]:
+          _.moveStart(moveDirections.getOrElse(code, Move.Direction.empty)).fork *> unit
+      case Key.Released(code) =>
+        serviceWithZIO[Emulator.Service]:
+          _.moveStop(moveDirections.getOrElse(code, Move.Direction.empty))
       ),
 
     MouseEvents.Modificator -> (
@@ -72,6 +71,16 @@ object Mouse:
         .tap:
           case Key.Pressed(code) => serviceWithZIO[Modificator.Service](s => modifications.get(code).fold(unit)(s.on))
           case Key.Released(code) => serviceWithZIO[Modificator.Service](s => modifications.get(code).fold(unit)(s.off))
+      ),
+
+    MouseEvents.Click -> (_.changes.tap:
+      case Key.Pressed(VK_ENTER) =>
+        for
+          _ <- serviceWithZIO[Window.Service](_.deactivate) *>
+            sleep(180.millis) *>
+            serviceWithZIO[Emulator.Service](_.click)
+        yield ()
+      case _ => unit
       ),
 
     MouseEvents.Mute -> (_.drain)

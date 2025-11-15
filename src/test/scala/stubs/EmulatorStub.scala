@@ -15,6 +15,7 @@ class EmulatorStub extends Emulator.Service:
     moves = moves ++ Chunk.single(m)
   override def moveStart: Move.Direction => UIO[Unit] = ???
   override def moveStop: Move.Direction => UIO[Unit] = ???
+  override def click: UIO[Unit] = ???
 
 object EmulatorStub:
   enum EmulatedMove:

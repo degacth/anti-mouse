@@ -15,9 +15,12 @@ object Window:
     case Shown, Hidden
 
   trait Service:
+    def activate: UIO[Unit]
+    def deactivate: UIO[Unit]
     def show: UIO[Unit]
     def hide: UIO[Unit]
     def listen: KeyListener => UIO[Unit]
+    def commands: UStream[Activator.Message]
 
   def frame: TaskLayer[Service] =
     ZLayer.scoped:
@@ -38,18 +41,33 @@ object Window:
           getContentPane.setBackground(Color.MAGENTA)
           setVisible(false)
 
+        activator <- Queue.unbounded[Activator.Message]
+
       yield new Service:
         override def show: UIO[Unit] = succeed(frame.setVisible(true))
         override def hide: UIO[Unit] = succeed(frame.setVisible(false))
         override def listen: KeyListener => UIO[Unit] = l => succeed(frame.addKeyListener(l))
+        override val commands: UStream[Activator.Message] = ZStream.fromQueue(activator)
+        override def activate: UIO[Unit] = activator.offer(Activator.Message.Activate).unit
+        override def deactivate: UIO[Unit] = activator.offer(Activator.Message.Deactivate).unit
 
-  val activator: ZPipeline[Service, Throwable, Activator.Message, Unit] = ZPipeline.mapAccumZIO(FrameState.Hidden):
-    case (FrameState.Hidden, _) => service[Service].flatMap(_.show.map(_ => (FrameState.Shown, ())))
-    case (FrameState.Shown, _) => service[Service].flatMap(_.hide.map(_ => (FrameState.Hidden, ())))
+  val activator: ZPipeline[Service, Throwable, Activator.Message, Activator.Message] =
+    def hide: Activator.Message => URIO[Service, Activator.Message] = m =>
+      serviceWithZIO[Service](_.hide.map(_ => m))
+
+    def show: Activator.Message => URIO[Service, Activator.Message] = m =>
+      serviceWithZIO[Service](_.show.map(_ => m))
+
+    ZPipeline.mapAccumZIO(FrameState.Hidden):
+      case (FrameState.Hidden, m@Activator.Message.Toggle) => show(m).map((FrameState.Shown, _))
+      case (FrameState.Shown, m@Activator.Message.Toggle) => hide(m).map((FrameState.Hidden, _))
+      case (FrameState.Hidden, m@Activator.Message.Activate) => show(m).map((FrameState.Shown, _))
+      case (FrameState.Shown, m@Activator.Message.Deactivate) => hide(m).map((FrameState.Hidden, _))
+      case m => succeed(m)
 
   val keyboardStream: ZStream[Service, Throwable, Key] =
     ZStream.asyncZIO[Service, Throwable, Key]: cb =>
-      serviceWithZIO[Service](_.listen(new KeyAdapter {
+      serviceWithZIO[Service](_.listen(new KeyAdapter:
         override def keyPressed(e: KeyEvent): Unit = cb.single(Key.pressed(e.getKeyCode))
         override def keyReleased(e: KeyEvent): Unit = cb.single(Key.released(e.getKeyCode))
-      }))
+      ))
