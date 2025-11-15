@@ -76,9 +76,14 @@ object Mouse:
     MouseEvents.Click -> (_.changes.tap:
       case Key.Pressed(VK_ENTER) =>
         for
-          _ <- serviceWithZIO[Window.Service](_.deactivate) *>
+          modificator <- service[Modificator.Service]
+          isBackClick <- modificator.has(Modificator.Mode.Alt)
+          window <- service[Window.Service]
+          _ <- window.deactivate *>
             sleep(180.millis) *>
-            serviceWithZIO[Emulator.Service](_.click)
+            serviceWithZIO[Emulator.Service](_.click) *>
+            sleep(60.millis) *>
+            when(isBackClick)(window.activate)
         yield ()
       case _ => unit
       ),
