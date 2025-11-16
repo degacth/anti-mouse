@@ -1,5 +1,6 @@
 package app.layer
 
+import app.streams.Window
 import zio.*
 import zio.stream.ZStream
 
@@ -34,7 +35,7 @@ object Move:
     def run(d: Direction, z: (Int, Int) => UIO[Unit]): UIO[Unit]
     def stop(d: Direction): UIO[Unit]
 
-  private type Deps = Speed & Rate & Modificator.Service
+  private type Deps = Speed & Rate & Modificator.Service & Window.Service
 
   private enum SpeedMod:
     case Slow, Normal, Fast, Faster
@@ -56,6 +57,12 @@ object Move:
       state <- Ref.make(State.empty)
       speed <- service[Speed]
       rate <- service[Rate]
+      _ <- Window.focusStream
+        .mapZIO:
+          case Window.Focus.Lost => state.set(State.empty)
+          case _ => unit
+        .runDrain
+        .fork
       modificator <- service[Modificator.Service]
       _ <- ZStream.fromQueue(modificator.watch)
         .runForeach: m =>

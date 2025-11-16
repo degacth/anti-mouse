@@ -12,8 +12,8 @@ class WindowStub extends Window.Service:
   override def show: UIO[Unit] = ???
   override def hide: UIO[Unit] = ???
   override def listen: KeyListener => UIO[Unit] = ???
-  override def focus: WindowFocusListener => UIO[Unit] = ???
+  override def focus: WindowFocusListener => UIO[Unit] = _ => ZIO.unit
   override def commands: UStream[Activator.Message] = ???
-  
+
 object WindowStub:
   val live: ULayer[Window.Service] = ZLayer.succeed(WindowStub())
