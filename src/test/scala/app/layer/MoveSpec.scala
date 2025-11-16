@@ -1,5 +1,7 @@
 package app.layer
 
+import app.streams.Window
+import stubs.WindowStub
 import zio.*
 import zio.test.*
 
@@ -72,6 +74,7 @@ object MoveSpec extends ZIOSpecDefault:
       Move.live,
       MovePageObject.live,
       Modificator.live,
+      WindowStub.live,
     )
 
 val rate: Int => ULayer[Move.Rate] = n => ZLayer.succeed(Move.rate(n))

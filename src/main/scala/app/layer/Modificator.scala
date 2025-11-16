@@ -2,6 +2,7 @@ package app.layer
 
 import zio.*
 import ZIO.*
+import app.streams.Window
 
 object Modificator:
   import app.common.BinaryCombinator.*
@@ -9,6 +10,8 @@ object Modificator:
   enum Mode:
     case Alt, Ctrl, Shift
     val code: Int = this.ordinal.bin
+
+  private val emptyState = 0
 
   object Mode:
     def hasModes(state: Int, modes: Mode*): Boolean = modes.foldRight[Boolean](true)((m, acc) => (state ?& m.code) && acc)
@@ -19,10 +22,16 @@ object Modificator:
     def has: Mode => UIO[Boolean]
     def watch: Queue[Int]
 
-  val live: ULayer[Service] = ZLayer.fromZIO:
+  val live: ZLayer[Window.Service, Throwable, Service] = ZLayer.fromZIO:
     for
-      state <- Ref.make(0)
+      state <- Ref.make(emptyState)
       queue <- Queue.unbounded[Int]
+      _ <- Window.focusStream
+        .mapZIO:
+          case Window.Focus.Lost => state.set(emptyState)
+          case _ => unit
+        .runDrain
+        .fork
     yield new Service:
       override val on: Mode => UIO[Unit] = m => state.updateAndGet(m.code +& _).flatMap(offer)
       override val off: Mode => UIO[Unit] = m => state.updateAndGet(m.code -& _).flatMap(offer)

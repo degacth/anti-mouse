@@ -73,7 +73,7 @@ object Mouse:
           case Key.Released(code) => serviceWithZIO[Modificator.Service](s => modifications.get(code).fold(unit)(s.off))
       ),
 
-    MouseEvents.Click -> (_.changes.tap:
+    MouseEvents.Click -> (_.tap:
       case Key.Pressed(VK_ENTER) =>
         for
           modificator <- service[Modificator.Service]
