@@ -1,5 +1,6 @@
 package app.streams
 
+import app.domain.WindowEvent
 import com.github.kwhat.jnativehook.GlobalScreen
 import com.github.kwhat.jnativehook.keyboard.{NativeKeyEvent, NativeKeyListener}
 import zio.*
@@ -16,11 +17,6 @@ object Activator:
 
   private val keysByCodes = HotKey.values.map(k => (k.code, k)).toMap[Int, HotKey]
   private val allPressed = HotKey.values.foldLeft(empty)(_ + _)
-
-  enum Message:
-    case Toggle
-    case Activate
-    case Deactivate
 
   trait GlobalKeyListener:
     def start: NativeKeyListener => Task[Unit]
@@ -43,7 +39,7 @@ object Activator:
           attempt(GlobalScreen.unregisterNativeHook()) *>
             attempt(GlobalScreen.removeNativeKeyListener(l))
 
-  val toggler: ZStream[GlobalKeyListener, Throwable, Message] = ZStream.asyncScoped: cb =>
+  val toggler: ZStream[GlobalKeyListener, Throwable, WindowEvent] = ZStream.asyncScoped: cb =>
     for
       _ <- debug("start listen global key")
       pressedKeys <- Ref.make(empty)
@@ -56,7 +52,7 @@ object Activator:
                 keysByCodes.get(nativeEvent.getKeyCode) match
                   case Some(code) => cb:
                     pressedKeys.updateAndGet(_ + code).map:
-                      case s if s & allPressed => Chunk.single(Message.Toggle)
+                      case s if s & allPressed => Chunk.single(WindowEvent.Toggle)
                       case _ => Chunk.empty
                   case _ => ()
 

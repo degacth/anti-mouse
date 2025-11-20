@@ -1,10 +1,11 @@
 package app.streams
 
 import app.domain.Key
+import app.domain.WindowEvent
 import zio.*
 import zio.stream.*
 
-import java.awt.event.{KeyAdapter, KeyEvent, KeyListener, WindowEvent, WindowFocusListener}
+import java.awt.event.{KeyAdapter, KeyEvent, KeyListener, WindowEvent => WE, WindowFocusListener}
 import java.awt.{Color, Rectangle}
 import javax.swing.{JFrame, WindowConstants}
 
@@ -24,7 +25,7 @@ object Window:
     def hide: UIO[Unit]
     def listen: KeyListener => UIO[Unit]
     def focus: WindowFocusListener => UIO[Unit]
-    def commands: UStream[Activator.Message]
+    def commands: UStream[WindowEvent]
 
   def frame: TaskLayer[Service] =
     ZLayer.scoped:
@@ -45,29 +46,29 @@ object Window:
           getContentPane.setBackground(Color.MAGENTA)
           setVisible(false)
 
-        activator <- Queue.unbounded[Activator.Message]
+        activator <- Queue.unbounded[WindowEvent]
 
       yield new Service:
         override def show: UIO[Unit] = succeed(frame.setVisible(true))
         override def hide: UIO[Unit] = succeed(frame.setVisible(false))
         override def listen: KeyListener => UIO[Unit] = l => succeed(frame.addKeyListener(l))
-        override val commands: UStream[Activator.Message] = ZStream.fromQueue(activator)
-        override def activate: UIO[Unit] = activator.offer(Activator.Message.Activate).unit
-        override def deactivate: UIO[Unit] = activator.offer(Activator.Message.Deactivate).unit
+        override val commands: UStream[WindowEvent] = ZStream.fromQueue(activator)
+        override def activate: UIO[Unit] = activator.offer(WindowEvent.Activate).unit
+        override def deactivate: UIO[Unit] = activator.offer(WindowEvent.Deactivate).unit
         override def focus: WindowFocusListener => UIO[Unit] = l => succeed(frame.addWindowFocusListener(l))
 
-  val activator: ZPipeline[Service, Throwable, Activator.Message, Activator.Message] =
-    def hide: Activator.Message => URIO[Service, Activator.Message] = m =>
+  val activator: ZPipeline[Service, Throwable, WindowEvent, WindowEvent] =
+    def hide: WindowEvent => URIO[Service, WindowEvent] = m =>
       serviceWithZIO[Service](_.hide.map(_ => m))
 
-    def show: Activator.Message => URIO[Service, Activator.Message] = m =>
+    def show: WindowEvent => URIO[Service, WindowEvent] = m =>
       serviceWithZIO[Service](_.show.map(_ => m))
 
     ZPipeline.mapAccumZIO(FrameState.Hidden):
-      case (FrameState.Hidden, m@Activator.Message.Toggle) => show(m).map((FrameState.Shown, _))
-      case (FrameState.Shown, m@Activator.Message.Toggle) => hide(m).map((FrameState.Hidden, _))
-      case (FrameState.Hidden, m@Activator.Message.Activate) => show(m).map((FrameState.Shown, _))
-      case (FrameState.Shown, m@Activator.Message.Deactivate) => hide(m).map((FrameState.Hidden, _))
+      case (FrameState.Hidden, m@WindowEvent.Toggle) => show(m).map((FrameState.Shown, _))
+      case (FrameState.Shown, m@WindowEvent.Toggle) => hide(m).map((FrameState.Hidden, _))
+      case (FrameState.Hidden, m@WindowEvent.Activate) => show(m).map((FrameState.Shown, _))
+      case (FrameState.Shown, m@WindowEvent.Deactivate) => hide(m).map((FrameState.Hidden, _))
       case m => succeed(m)
 
   val keyboardStream: ZStream[Service, Throwable, Key] =
@@ -79,6 +80,6 @@ object Window:
 
   val focusStream: ZStream[Service, Throwable, Focus] = ZStream.asyncZIO: cb =>
     serviceWithZIO[Service](_.focus(new WindowFocusListener {
-      override def windowGainedFocus(e: WindowEvent): Unit = cb.single(Focus.Gain)
-      override def windowLostFocus(e: WindowEvent): Unit = cb.single(Focus.Lost)
+      override def windowGainedFocus(e: WE): Unit = cb.single(Focus.Gain)
+      override def windowLostFocus(e: WE): Unit = cb.single(Focus.Lost)
     }))

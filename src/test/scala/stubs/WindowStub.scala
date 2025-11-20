@@ -1,5 +1,6 @@
 package stubs
 
+import app.domain.WindowEvent
 import app.streams.{Activator, Window}
 import zio.*
 import zio.stream.UStream
@@ -13,7 +14,7 @@ class WindowStub extends Window.Service:
   override def hide: UIO[Unit] = ???
   override def listen: KeyListener => UIO[Unit] = ???
   override def focus: WindowFocusListener => UIO[Unit] = _ => ZIO.unit
-  override def commands: UStream[Activator.Message] = ???
+  override def commands: UStream[WindowEvent] = ???
 
 object WindowStub:
   val live: ULayer[Window.Service] = ZLayer.succeed(WindowStub())

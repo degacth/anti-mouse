@@ -1,17 +1,17 @@
 package app.streams
 
+import app.domain.WindowEvent
 import app.streams.Activator.HotKey
 import zio.*
 import zio.test.*
 import stubs.GlobalKeyListenerStub
-import zio.stream.{ZPipeline, ZSink, ZStream}
 
 object ActivatorSpec extends ZIOSpecDefault:
   import ZIO.*
 
   private val pressToToggle = Seq(HotKey.Ctrl, HotKey.Alt, HotKey.Semicolon)
 
-  private def withActivator(f: GlobalKeyListenerStub => UIO[Unit]): URIO[GlobalKeyListenerStub, Chunk[Activator.Message]] =
+  private def withActivator(f: GlobalKeyListenerStub => UIO[Unit]): URIO[GlobalKeyListenerStub, Chunk[WindowEvent]] =
     val streamTimeout = 10
     for
       fiber <- Activator.toggler.timeout(streamTimeout.millis).runCollect.orDie.fork
@@ -27,7 +27,7 @@ object ActivatorSpec extends ZIOSpecDefault:
         stub.pressed(pressToToggle.init *) *>
           stub.pressed(pressToToggle.last)
       }
-        .map(act => assertTrue(act == Chunk.single(Activator.Message.Toggle)))
+        .map(act => assertTrue(act == Chunk.single(WindowEvent.Toggle)))
     ,
 
     test("should not emit toggle"):
