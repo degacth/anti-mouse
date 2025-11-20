@@ -48,19 +48,17 @@ object Activator:
           gkl <- service[GlobalKeyListener]
           _ <- gkl.start:
             new NativeKeyListener:
-              override def nativeKeyPressed(nativeEvent: NativeKeyEvent): Unit =
-                keysByCodes.get(nativeEvent.getKeyCode) match
-                  case Some(code) => cb:
-                    pressedKeys.updateAndGet(_ + code).map:
-                      case s if s & allPressed => Chunk.single(WindowEvent.Toggle)
-                      case _ => Chunk.empty
-                  case _ => ()
+              override def nativeKeyPressed(e: NativeKeyEvent): Unit = e.getKeyCode match
+                case code if keysByCodes.contains(code) => cb:
+                  pressedKeys.updateAndGet(_ + keysByCodes(code)).map:
+                    case s if s & allPressed => Chunk.single(WindowEvent.Toggle)
+                    case _ => Chunk.empty
+                case _ => ()
 
-              override def nativeKeyReleased(nativeEvent: NativeKeyEvent): Unit =
-                keysByCodes.get(nativeEvent.getKeyCode) match
-                  case Some(code) => cb:
-                    pressedKeys.update(_ - code).map(_ => Chunk.empty)
-                  case _ => ()
+              override def nativeKeyReleased(e: NativeKeyEvent): Unit = e.getKeyCode match
+                case code if keysByCodes.contains(code) => cb:
+                  pressedKeys.update(_ - keysByCodes(code)).map(_ => Chunk.empty)
+                case _ => ()
         yield gkl
       }(_.stop.orDie *> debug("stop listen global key"))
     yield ()
