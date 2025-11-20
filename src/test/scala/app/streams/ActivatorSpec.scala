@@ -1,6 +1,6 @@
 package app.streams
 
-import app.streams.Activator.HotKeys
+import app.streams.Activator.HotKey
 import zio.*
 import zio.test.*
 import stubs.GlobalKeyListenerStub
@@ -9,7 +9,7 @@ import zio.stream.{ZPipeline, ZSink, ZStream}
 object ActivatorSpec extends ZIOSpecDefault:
   import ZIO.*
 
-  private val pressToToggle = Seq(HotKeys.Ctrl, HotKeys.Alt, HotKeys.Semicolon)
+  private val pressToToggle = Seq(HotKey.Ctrl, HotKey.Alt, HotKey.Semicolon)
 
   private def withActivator(f: GlobalKeyListenerStub => UIO[Unit]): URIO[GlobalKeyListenerStub, Chunk[Activator.Message]] =
     val streamTimeout = 10

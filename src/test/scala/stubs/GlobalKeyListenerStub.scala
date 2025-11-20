@@ -1,7 +1,7 @@
 package stubs
 
 import app.streams.Activator
-import app.streams.Activator.HotKeys
+import app.streams.Activator.HotKey
 import com.github.kwhat.jnativehook.keyboard.{NativeKeyEvent, NativeKeyListener}
 import zio.*
 
@@ -14,10 +14,10 @@ class GlobalKeyListenerStub extends Activator.GlobalKeyListener:
   override def start: NativeKeyListener => UIO[Unit] = l => succeed(this.listener = Option(l))
   override def stop: UIO[Unit] = succeed(())
 
-  def pressed(keys: HotKeys*): UIO[Unit] = foreachDiscard(keys): key =>
+  def pressed(keys: HotKey*): UIO[Unit] = foreachDiscard(keys): key =>
     succeed(listener.foreach(_.nativeKeyPressed(KeyEvent(key.code))))
 
-  def released(keys: HotKeys*): UIO[Unit] = foreachDiscard(keys): key =>
+  def released(keys: HotKey*): UIO[Unit] = foreachDiscard(keys): key =>
     succeed(listener.foreach(_.nativeKeyReleased(KeyEvent(key.code))))
 
 object GlobalKeyListenerStub:

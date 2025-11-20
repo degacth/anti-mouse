@@ -9,19 +9,13 @@ object Activator:
   import ZIO.*
   import app.common.BinStore.*
 
-  enum HotKeys(c: Int):
-    case Ctrl extends HotKeys(NativeKeyEvent.VC_CONTROL)
-    case Alt extends HotKeys(NativeKeyEvent.VC_ALT)
-    case Semicolon extends HotKeys(NativeKeyEvent.VC_SEMICOLON)
+  enum HotKey(val code: Int):
+    case Ctrl extends HotKey(NativeKeyEvent.VC_CONTROL)
+    case Alt extends HotKey(NativeKeyEvent.VC_ALT)
+    case Semicolon extends HotKey(NativeKeyEvent.VC_SEMICOLON)
 
-    def code: Int = c
-
-  object HotKeys:
-    val by: Int => Option[HotKeys] =
-      case NativeKeyEvent.VC_CONTROL => Some(HotKeys.Ctrl)
-      case NativeKeyEvent.VC_ALT => Some(HotKeys.Alt)
-      case NativeKeyEvent.VC_SEMICOLON => Some(HotKeys.Semicolon)
-      case _ => None
+  private val keysByCodes = HotKey.values.map(k => (k.code, k)).toMap[Int, HotKey]
+  private val allPressed = HotKey.values.foldLeft(empty)(_ + _)
 
   enum Message:
     case Toggle
@@ -34,8 +28,6 @@ object Activator:
 
   object GlobalKeyListener:
     val empty: NativeKeyListener = new NativeKeyListener {}
-
-  private val allPressed = empty + HotKeys.Ctrl + HotKeys.Alt + HotKeys.Semicolon
 
   val globalKeyListener: TaskLayer[GlobalKeyListener] = ZLayer.fromZIO:
     for
@@ -61,7 +53,7 @@ object Activator:
           _ <- gkl.start:
             new NativeKeyListener:
               override def nativeKeyPressed(nativeEvent: NativeKeyEvent): Unit =
-                HotKeys.by(nativeEvent.getKeyCode) match
+                keysByCodes.get(nativeEvent.getKeyCode) match
                   case Some(code) => cb:
                     pressedKeys.updateAndGet(_ + code).map:
                       case s if s & allPressed => Chunk.single(Message.Toggle)
@@ -69,7 +61,7 @@ object Activator:
                   case _ => ()
 
               override def nativeKeyReleased(nativeEvent: NativeKeyEvent): Unit =
-                HotKeys.by(nativeEvent.getKeyCode) match
+                keysByCodes.get(nativeEvent.getKeyCode) match
                   case Some(code) => cb:
                     pressedKeys.update(_ - code).map(_ => Chunk.empty)
                   case _ => ()
