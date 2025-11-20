@@ -7,6 +7,21 @@ import zio.stream.ZStream
 
 object Activator:
   import ZIO.*
+  import app.common.BinStore.*
+
+  enum HotKeys(c: Int):
+    case Ctrl extends HotKeys(NativeKeyEvent.VC_CONTROL)
+    case Alt extends HotKeys(NativeKeyEvent.VC_ALT)
+    case Semicolon extends HotKeys(NativeKeyEvent.VC_SEMICOLON)
+
+    def code: Int = c
+
+  object HotKeys:
+    val by: Int => Option[HotKeys] =
+      case NativeKeyEvent.VC_CONTROL => Some(HotKeys.Ctrl)
+      case NativeKeyEvent.VC_ALT => Some(HotKeys.Alt)
+      case NativeKeyEvent.VC_SEMICOLON => Some(HotKeys.Semicolon)
+      case _ => None
 
   enum Message:
     case Toggle
@@ -20,19 +35,7 @@ object Activator:
   object GlobalKeyListener:
     val empty: NativeKeyListener = new NativeKeyListener {}
 
-  val pressToToggle: Seq[Int] = Seq(
-    NativeKeyEvent.VC_CONTROL,
-    NativeKeyEvent.VC_ALT,
-    NativeKeyEvent.VC_SEMICOLON,
-  )
-
-  private val pressToToggleByCodes: Map[Int, Int] =
-    pressToToggle
-      .zipWithIndex
-      .map { case (k, i) => (k, 1 << i) }
-      .toMap
-
-  private val allPressed: Int = pressToToggleByCodes.values.fold(0)(_ | _)
+  private val allPressed = empty + HotKeys.Ctrl + HotKeys.Alt + HotKeys.Semicolon
 
   val globalKeyListener: TaskLayer[GlobalKeyListener] = ZLayer.fromZIO:
     for
@@ -51,28 +54,24 @@ object Activator:
   val toggler: ZStream[GlobalKeyListener, Throwable, Message] = ZStream.asyncScoped: cb =>
     for
       _ <- debug("start listen global key")
-      pressedKeys <- Ref.make(0)
+      pressedKeys <- Ref.make(empty)
       _ <- acquireRelease {
         for
           gkl <- service[GlobalKeyListener]
           _ <- gkl.start:
             new NativeKeyListener:
               override def nativeKeyPressed(nativeEvent: NativeKeyEvent): Unit =
-                pressToToggleByCodes.get(nativeEvent.getKeyCode) match
+                HotKeys.by(nativeEvent.getKeyCode) match
                   case Some(code) => cb:
-                    pressedKeys
-                      .updateAndGet(_ | code)
-                      .map:
-                        case v if v == allPressed => Chunk.single(Message.Toggle)
-                        case _ => Chunk.empty
+                    pressedKeys.updateAndGet(_ + code).map:
+                      case s if s & allPressed => Chunk.single(Message.Toggle)
+                      case _ => Chunk.empty
                   case _ => ()
 
               override def nativeKeyReleased(nativeEvent: NativeKeyEvent): Unit =
-                pressToToggleByCodes.get(nativeEvent.getKeyCode) match
+                HotKeys.by(nativeEvent.getKeyCode) match
                   case Some(code) => cb:
-                    pressedKeys
-                      .update(v => (v | code) ^ code)
-                      .map(_ => Chunk.empty)
+                    pressedKeys.update(_ - code).map(_ => Chunk.empty)
                   case _ => ()
         yield gkl
       }(_.stop.orDie *> debug("stop listen global key"))
