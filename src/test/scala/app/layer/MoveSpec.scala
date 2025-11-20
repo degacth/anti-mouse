@@ -1,6 +1,5 @@
 package app.layer
 
-import app.streams.Window
 import stubs.WindowStub
 import zio.*
 import zio.test.*
