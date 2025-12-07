@@ -3,24 +3,24 @@ package app.common
 import scala.language.reflectiveCalls
 
 object BinStore:
-  opaque type State = Int
+  opaque type State[T <: Enumic] = Int
 
   private type Enumic = {
     def ordinal: Int
   }
 
-  val empty: State = 0
-  val raw: Int => State = identity
-  private val of: Enumic => State = _.bin
+  def empty[T <: Enumic]: State[T] = 0
+  def raw[T <: Enumic]: Int => State[T] = identity
+  private def of[T <: Enumic]: Enumic => State[T] = _.bin
 
-  extension (e: Enumic)
+  extension [T <: Enumic](e: T)
     def bin: Int = 1 << e.ordinal
-    def +(o: Enumic): State = of(e) + o
-    def state: State = of(e)
+    def ++(o: T): State[T] = of(e) + o
+    def state: State[T] = of(e)
 
-  extension (s: State)
-    def +(o: Enumic): State = s | o.bin
-    def -(o: Enumic): State = (s | o.bin) ^ o.bin
-    def ?(o: Enumic): Boolean = (s & o.bin) != 0
-    def |(o: State): Boolean = (s | o) != 0
-    def &(o: State): Boolean = (s & o) == o
+  extension [T <: Enumic](s: State[T])
+    def +(o: T): State[T] = s | o.bin
+    def -(o: T): State[T] = (s | o.bin) ^ o.bin
+    def ?(o: T): Boolean = (s & o.bin) != 0
+    def |(o: State[T]): Boolean = (s | o) != 0
+    def &(o: State[T]): Boolean = (s & o) == o

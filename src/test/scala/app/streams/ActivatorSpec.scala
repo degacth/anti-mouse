@@ -54,5 +54,29 @@ object ActivatorSpec extends ZIOSpecDefault:
       }
         .map(act => assertTrue(act == Chunk.empty))
     ,
+
+    /*
+    test("should group keys"):
+      import zio.stream.*
+
+      for
+        _ <- TestRandom.setSeed(42)
+        fiber <- ZStream
+          .iterate(0)(_ + 1)
+          .mapZIOParUnordered(4)(n => Random.nextIntBetween(0, 50).flatMap(t => succeed(n).delay(t.millis)))
+          .take(12)
+          .groupByKey(_ % 3 == 0)((_, s) => ZStream(s))
+          .rechunk(2)
+          .mapChunksZIO:
+            case Chunk(s1, s2, _*) => succeed(Chunk.single(s1.zipAllWith(s2)((_, -1), (-2, _))((_, _))))
+            case _ => fail(new IllegalStateException(">>> Wrong regrouping keyboard events <<<"))
+          .flatten
+          .runCollect
+          .fork
+        _ <- TestClock.adjust(2.seconds)
+        actual <- fiber.join
+      yield assertTrue(actual == Chunk(0, 1, 2, 3))
+     */
+
   )
     .provideLayer(GlobalKeyListenerStub.live)

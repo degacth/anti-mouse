@@ -8,7 +8,7 @@ object Screen:
   import ZIO.*
 
   trait Service:
-    def screenPart(dim: (Int, Int), point: (Int, Int)): RIO[Display, (Int, Int)]
+    def screenPart(dim: (Int, Int), point: (Int, Int)): Task[(Int, Int)]
 
   trait Display:
     def size: Task[(Double, Double)]
@@ -21,11 +21,12 @@ object Screen:
         }.map(display => (display.getWidth.toDouble, display.getHeight.toDouble))
 
   val live: RLayer[Display, Service] = ZLayer.scoped:
-    ZIO.succeed:
-      new Service:
-        override def screenPart(dim: (Int, Int), point: (Int, Int)): RIO[Display, (Int, Int)] =
+    for
+      display <- service[Display]
+    yield new Service:
+        override def screenPart(dim: (Int, Int), point: (Int, Int)): Task[(Int, Int)] =
           for
-            (dw, dh) <- serviceWithZIO[Display](_.size)
+            (dw, dh) <- display.size
             (sw, sh) = (dw / dim._1, dh / dim._2)
             (hw, hh) = (sw / 2, sh / 2)
           yield ((point._1 * sw + hw).toInt, (point._2 * sh + hh).toInt)
