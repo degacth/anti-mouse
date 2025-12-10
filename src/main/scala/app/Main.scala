@@ -5,7 +5,7 @@ import app.layer.activator.{Activator2, GlobalKeyListener}
 import app.streams.{Mouse, Window}
 import zio.*
 import ZIO.*
-import app.layer.emulator.{FastMove, KeysEmulator}
+import app.layer.emulator.{DirectionMove, FastMove, KeysEmulator}
 import zio.stream.{ZPipeline, ZSink, ZStream}
 
 object Main extends ZIOAppDefault:
@@ -35,6 +35,7 @@ object Main extends ZIOAppDefault:
           GlobalKeyListener.live,
           KeysEmulator.live,
           FastMove.live,
+          DirectionMove.live,
           Screen.live,
           Screen.display,
           Cursor.live,

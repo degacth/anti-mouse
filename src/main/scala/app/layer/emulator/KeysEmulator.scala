@@ -1,6 +1,6 @@
 package app.layer.emulator
 
-import app.domain.CursorMove
+import app.domain.CursorAction
 import zio.ZIO.*
 import zio.*
 import zio.stream.*
@@ -10,18 +10,23 @@ import java.awt.event.KeyEvent
 object KeysEmulator:
 
   trait Service:
-    def emulate: ZStream[Any, Throwable, KeyEvent] => ZStream[Any, Throwable, CursorMove]
+    def emulate: ZStream[Any, Throwable, KeyEvent] => ZStream[Any, Throwable, CursorAction]
 
-  val live: ZLayer[FastMove.Service, Throwable, Service] = ZLayer.scoped:
+  type Deps = FastMove.Service & DirectionMove.Service
+
+  val live: ZLayer[Deps, Throwable, Service] = ZLayer.scoped:
     for
       fastMove <- service[FastMove.Service]
+      directionMove <- service[DirectionMove.Service]
     yield new Service:
-      import app.matcher.KeyEventMatcher.*
-
-      override def emulate: ZStream[Any, Throwable, KeyEvent] => ZStream[Any, Throwable, CursorMove] = _
+      override def emulate: ZStream[Any, Throwable, KeyEvent] => ZStream[Any, Throwable, CursorAction] = _
         .changesWith: (v1, v2) =>
           v1.getID == v2.getID &&
             v1.getKeyCode == v2.getKeyCode &&
             v1.getModifiersEx == v2.getModifiersEx
         .collectZIO:
-          case event @ Press |> AnyOne if fastMove has event => fastMove.absolute(event).map(CursorMove.Absolute(_, _))
+          case event if fastMove has event => fastMove.absolute(event)
+          case event if directionMove has event => (event.getID, event.getKeyCode) match
+            case (KeyEvent.KEY_PRESSED, code) => succeed(directionMove.start(code))
+            case (KeyEvent.KEY_RELEASED, code) => succeed(directionMove.stop(code))
+            case _ => fail(new IllegalStateException("Wrong logic to check direction move"))

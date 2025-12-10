@@ -2,6 +2,7 @@ package app.layer.emulator
 
 import zio.*
 import ZIO.*
+import app.domain.CursorAction
 import app.layer.Screen
 
 import java.awt.event.KeyEvent
@@ -11,7 +12,7 @@ object FastMove:
 
   trait Service:
     infix def has(e: KeyEvent): Boolean
-    def absolute(e: KeyEvent): Task[(Int, Int)]
+    def absolute(e: KeyEvent): Task[CursorAction.Absolute]
 
   private val keys: Chunk[Chunk[Int]] = Chunk(
     Chunk(VK_Q, VK_W, VK_E, VK_R),
@@ -37,4 +38,6 @@ object FastMove:
       screen <- service[Screen.Service]
     yield new Service:
       override def has(e: KeyEvent): Boolean = FastMove.has(e)
-      override def absolute(e: KeyEvent): Task[(Int, Int)] = screen.screenPart(dimension, fastMovePointByKey(e.getKeyCode))
+      override def absolute(e: KeyEvent): Task[CursorAction.Absolute] = screen
+        .screenPart(dimension, fastMovePointByKey(e.getKeyCode))
+        .map(CursorAction.Absolute(_, _))
