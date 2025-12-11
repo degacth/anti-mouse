@@ -25,5 +25,6 @@ object BinStore:
     def |(o: State[T]): Boolean = (s | o) != 0
     def &(o: State[T]): Boolean = (s & o) == o
     def present[D](o: T, default: D, f: T => D): D = if s ? o then f(o) else default
+    def filtered(cond: => Boolean, f: State[T] => State[T]): State[T] = if cond then f(s) else s
 
   val EmptyState: State[Nothing] = empty

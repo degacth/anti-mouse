@@ -4,6 +4,7 @@ import zio.ZLayer
 import zio.*
 import ZIO.*
 import app.domain.{CursorAction, Direction}
+import app.layer.modificator.KeyModificator
 import zio.stream.ZStream
 
 import java.awt.Robot
@@ -13,11 +14,24 @@ object Cursor:
   trait Service:
     def move: ZStream[Any, Throwable, CursorAction] => ZStream[Any, Throwable, Any]
 
-  val live: ZLayer[Any, Throwable, Service] = ZLayer.scoped:
+  val live: ZLayer[KeyModificator.Service, Throwable, Service] = ZLayer.scoped:
     import app.common.BinStore.*
+    import app.layer.modificator.Mod
+
     for
       robot <- attempt(Robot())
       direction <- Ref.make(empty[Direction])
+      baseSpeed = 5
+      speed <- Ref.make(baseSpeed)
+      _ <- serviceWithZIO[KeyModificator.Service]: s =>
+        ZStream.fromQueue(s.changed)
+          .mapZIO:
+            case s if s ? Mod.Ctrl && s ? Mod.Shift => speed.set((baseSpeed * .7).toInt)
+            case s if s ? Mod.Ctrl => speed.set((baseSpeed * .5).toInt)
+            case s if s ? Mod.Shift => speed.set(baseSpeed * 2)
+            case _ => speed.set(baseSpeed)
+          .runDrain
+          .fork
     yield new Service:
       import app.domain.CursorAction.*
 
@@ -32,15 +46,15 @@ object Cursor:
           case StopMove(dir) => direction.update(_ - dir)
 
       private def directionMove: Task[Unit] = direction.get.flatMap:
-          case EmptyState => unit
-          case dir => for
-            location <- attempt(getPointerInfo.getLocation)
-            (x, y) = (
-              dir.present(Direction.Left, 0, _.diff) + dir.present(Direction.Right, 0, _.diff),
-              dir.present(Direction.Up, 0, _.diff) + dir.present(Direction.Down, 0, _.diff),
-              )
-            speed = 5
-            freq = 1000 / 30
-            _ <- attempt(robot.mouseMove((x * speed) + location.x, (y * speed) + location.y))
-            _ <- directionMove.delay(freq.millis)
-          yield ()
+        case EmptyState => unit
+        case dir => for
+          location <- attempt(getPointerInfo.getLocation)
+          (x, y) = (
+            dir.present(Direction.Left, 0, _.diff) + dir.present(Direction.Right, 0, _.diff),
+            dir.present(Direction.Up, 0, _.diff) + dir.present(Direction.Down, 0, _.diff),
+          )
+          s <- speed.get
+          freq = 1000 / 30
+          _ <- attempt(robot.mouseMove((x * s) + location.x, (y * s) + location.y))
+          _ <- directionMove.delay(freq.millis)
+        yield ()
