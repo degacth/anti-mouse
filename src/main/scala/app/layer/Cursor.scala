@@ -5,6 +5,8 @@ import zio.*
 import ZIO.*
 import app.domain.{CursorAction, Direction}
 import app.layer.modificator.KeyModificator
+import app.layer.window.Window2
+import app.layer.window.WindowAction.FocusLost
 import zio.stream.ZStream
 
 import java.awt.Robot
@@ -14,22 +16,30 @@ object Cursor:
   trait Service:
     def move: ZStream[Any, Throwable, CursorAction] => ZStream[Any, Throwable, Any]
 
-  val live: ZLayer[KeyModificator.Service, Throwable, Service] = ZLayer.scoped:
+  private type Deps = KeyModificator.Service & Window2.Service
+
+  val live: ZLayer[Deps, Throwable, Service] = ZLayer.scoped:
     import app.common.BinStore.*
     import app.layer.modificator.Mod
 
     for
       robot <- attempt(Robot())
       direction <- Ref.make(empty[Direction])
-      baseSpeed = 5
+      baseSpeed = 7
       speed <- Ref.make(baseSpeed)
       _ <- serviceWithZIO[KeyModificator.Service]: s =>
         ZStream.fromQueue(s.changed)
-          .mapZIO:
-            case s if s ? Mod.Ctrl && s ? Mod.Shift => speed.set((baseSpeed * .7).toInt)
+          .foreach:
+            case s if s ? Mod.Ctrl && s ? Mod.Shift => speed.set((baseSpeed * .8).toInt)
             case s if s ? Mod.Ctrl => speed.set((baseSpeed * .5).toInt)
             case s if s ? Mod.Shift => speed.set(baseSpeed * 2)
             case _ => speed.set(baseSpeed)
+          .fork
+
+      _ <- serviceWithZIO[Window2.Service]:
+        _.windowActions
+          .collectZIO:
+            case FocusLost => direction.set(empty)
           .runDrain
           .fork
     yield new Service:

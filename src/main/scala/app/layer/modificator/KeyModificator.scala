@@ -19,19 +19,20 @@ object KeyModificator:
     yield new Service:
       import KeyEvent.*
 
+      override def changed: Queue[State[Mod]] = stateChanges
       override def modify: KeyEvent => UIO[Unit] = e =>
         val modifier = e.getID match
           case KeyEvent.KEY_PRESSED => addKey
           case KeyEvent.KEY_RELEASED => removeKey
 
         state
-          .updateAndGet: s =>
-            s
+          .updateAndGet:
+            _
               .filtered(e.isControlDown || e.getKeyCode == VK_CONTROL, modifier(_, Mod.Ctrl))
               .filtered(e.isAltDown || e.getKeyCode == VK_ALT, modifier(_, Mod.Alt))
               .filtered(e.isShiftDown || e.getKeyCode == VK_SHIFT, modifier(_, Mod.Shift))
-          .flatMap(stateChanges.offer(_) *> unit) *> state.get.flatMap(debug(_))
+
+          .flatMap(stateChanges.offer(_) *> unit)
 
       private val addKey: (State[Mod], Mod) => State[Mod] = _ + _
       private val removeKey: (State[Mod], Mod) => State[Mod] = _ - _
-      override def changed: Queue[State[Mod]] = stateChanges
