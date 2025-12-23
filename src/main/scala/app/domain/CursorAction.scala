@@ -14,3 +14,4 @@ enum CursorAction:
   case Absolute(x: Int, y: Int)
   case StartMove(dir: Direction)
   case StopMove(dir: Direction)
+  case Click

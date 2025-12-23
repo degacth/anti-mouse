@@ -12,9 +12,8 @@ object Activator2:
   case object Toggle
 
   enum HotKey(val code: Int):
-    case Ctrl extends HotKey(NativeKeyEvent.VC_CONTROL)
-    case Alt extends HotKey(NativeKeyEvent.VC_ALT)
-    case Semicolon extends HotKey(NativeKeyEvent.VC_SEMICOLON)
+    case LShift extends HotKey(NativeKeyEvent.VC_SHIFT)
+    case RShift extends HotKey(3638)
 
   trait Service:
     def toggler: Stream[Throwable, Toggle.type]

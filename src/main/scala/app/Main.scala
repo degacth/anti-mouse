@@ -5,7 +5,7 @@ import app.layer.activator.{Activator2, GlobalKeyListener}
 import app.streams.{Mouse, Window}
 import zio.*
 import ZIO.*
-import app.layer.emulator.{DirectionMove, FastMove, KeysEmulator}
+import app.layer.emulator.{ClickAction, DirectionMove, FastMove, KeysEmulator}
 import app.layer.modificator.KeyModificator
 import app.layer.window.Window2
 import zio.stream.{ZPipeline, ZSink, ZStream}
@@ -42,6 +42,7 @@ object Main extends ZIOAppDefault:
           Screen.display,
           Cursor.live,
           KeyModificator.live,
+          ClickAction.live,
         )
         .catchAllCause(e => logError(e.prettyPrint))
         .fork

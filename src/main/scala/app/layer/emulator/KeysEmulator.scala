@@ -13,13 +13,14 @@ object KeysEmulator:
   trait Service:
     def emulate: ZStream[Any, Throwable, KeyEvent] => ZStream[Any, Throwable, CursorAction]
 
-  type Deps = FastMove.Service & DirectionMove.Service & KeyModificator.Service
+  type Deps = FastMove.Service & DirectionMove.Service & KeyModificator.Service & ClickAction.Service
 
   val live: ZLayer[Deps, Throwable, Service] = ZLayer.scoped:
     for
       fastMove <- service[FastMove.Service]
       directionMove <- service[DirectionMove.Service]
       modificator <- service[KeyModificator.Service]
+      clickAction <- service[ClickAction.Service]
     yield new Service:
       override def emulate: ZStream[Any, Throwable, KeyEvent] => ZStream[Any, Throwable, CursorAction] = _
         .changesWith: (v1, v2) =>
@@ -33,3 +34,4 @@ object KeysEmulator:
             case (KeyEvent.KEY_PRESSED, code) => succeed(directionMove.start(code))
             case (KeyEvent.KEY_RELEASED, code) => succeed(directionMove.stop(code))
             case _ => fail(new IllegalStateException("Wrong logic to check direction move"))
+          case event if clickAction has event => succeed(clickAction.click)

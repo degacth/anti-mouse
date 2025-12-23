@@ -11,6 +11,7 @@ import zio.stream.ZStream
 
 import java.awt.Robot
 import java.awt.MouseInfo.getPointerInfo
+import java.awt.event.InputEvent
 
 object Cursor:
   trait Service:
@@ -54,6 +55,8 @@ object Cursor:
               case EmptyState => directionMove.fork *> unit
               case _ => unit
           case StopMove(dir) => direction.update(_ - dir)
+          case Click => attempt(robot.mousePress(InputEvent.BUTTON1_DOWN_MASK)) *>
+            attempt(robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK))
 
       private def directionMove: Task[Unit] = direction.get.flatMap:
         case EmptyState => unit

@@ -3,6 +3,7 @@ package app.layer
 import zio.*
 import ZIO.*
 import app.streams.Window
+import scala.io.AnsiColor
 
 object Modificator:
   import app.common.BinaryCombinator.*
