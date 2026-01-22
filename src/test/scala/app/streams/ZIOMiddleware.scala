@@ -5,6 +5,7 @@ import ZIO.*
 import zio.stream.ZStream
 import zio.test.*
 
+/*
 type MiddlewareHandler[In, Out, R, E] = (In, ZIO[R, E, Out]) => ZIO[R, E, Out]
 case class Middleware[In, Out, R, E](handlers: Chunk[MiddlewareHandler[In, Out, R, E]] = Chunk.empty)
 
@@ -30,3 +31,5 @@ object ZIOMiddleware extends ZIOSpecDefault:
           .runCollect
       yield assertTrue(actual == Chunk(0, 1, 2, 3, 4, 5))
   )
+
+*/

@@ -1,26 +1,25 @@
 package stubs
 
-import app.streams.Activator
-import app.streams.Activator.HotKey
+import app.layer.activator.GlobalKeyListener
 import com.github.kwhat.jnativehook.keyboard.{NativeKeyEvent, NativeKeyListener}
 import zio.*
+import zio.ZIO.*
 
-class GlobalKeyListenerStub extends Activator.GlobalKeyListener:
-  import zio.ZIO.*
-  import GlobalKeyListenerStub.*
+class GlobalKeyListenerStub extends GlobalKeyListener.Service:
+  import GlobalKeyListenerStub.StubbedKeyEvent
 
   private var listener: Option[NativeKeyListener] = None
 
-  override def start: NativeKeyListener => UIO[Unit] = l => succeed(this.listener = Option(l))
-  override def stop: UIO[Unit] = succeed(())
+  override val start: NativeKeyListener => UIO[Unit] = l => succeed(this.listener = Option(l))
+  override val stop: UIO[Unit] = succeed(())
 
-  def pressed(keys: HotKey*): UIO[Unit] = foreachDiscard(keys): key =>
-    succeed(listener.foreach(_.nativeKeyPressed(KeyEvent(key.code))))
+  def pressed(codes: Int*): UIO[Unit] = foreachDiscard(codes): code =>
+    succeed(listener.foreach(_.nativeKeyPressed(StubbedKeyEvent(code))))
 
-  def released(keys: HotKey*): UIO[Unit] = foreachDiscard(keys): key =>
-    succeed(listener.foreach(_.nativeKeyReleased(KeyEvent(key.code))))
+  def released(codes: Int*): UIO[Unit] = foreachDiscard(codes): code =>
+    succeed(listener.foreach(_.nativeKeyReleased(StubbedKeyEvent(code))))
 
 object GlobalKeyListenerStub:
-  val live: ULayer[Activator.GlobalKeyListener & GlobalKeyListenerStub] = ZLayer.succeed(GlobalKeyListenerStub())
+  val live: ULayer[GlobalKeyListener.Service & GlobalKeyListenerStub] = ZLayer.succeed(GlobalKeyListenerStub())
 
-  class KeyEvent(code: Int) extends NativeKeyEvent(0, 0, 0, code, Char.MinValue, 0)
+  case class StubbedKeyEvent(code: Int) extends NativeKeyEvent(0, 0, 0, code, Char.MinValue)
