@@ -17,14 +17,17 @@ object Main extends ZIOAppDefault:
             case Activator.Status.Activated => window.activate
             case Activator.Status.Deactivated => window.deactivate
           .fork
-      _ <- window.keyPress.debug.runDrain.fork
-      _ <- window.keyRelease.debug.runDrain.fork
+      _ <- window.keys.foreach: (k, p) =>
+        (debug(s"pressed $k") *> p.await *> debug(s"released $k")).fork
+      .fork
 
       _ <- Console.readLine("ENTER to stop")
       _ <- f.interrupt
     yield ()
       ).provide(
       Window.live,
+      Window.frame,
+      Window.keyEventStream,
       Activator.live,
       GlobalKeyListener.live,
     )

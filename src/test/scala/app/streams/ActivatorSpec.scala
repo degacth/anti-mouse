@@ -9,9 +9,9 @@ import stubs.GlobalKeyListenerStub
 object ActivatorSpec extends ZIOSpecDefault:
   import ZIO.*
 
-  import Activator.{actionTimeout, actionKey}
+  import Activator.actionKey
 
-  def spec = suite("activator spec")(
+  override def spec: Spec[TestEnvironment & Scope, Any]= suite("activator spec")(
     test("should activate application"):
       for
         interrupter <- Promise.make[Throwable, Unit]
