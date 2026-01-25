@@ -23,10 +23,12 @@ object WindowSpec extends ZIOSpecDefault:
   override def spec: Spec[TestEnvironment & Scope, Any] = suite(getClass.getSimpleName)(
     test("should emit keys promise in right order") {
       for
-        window <- ZIO.service[Window.Service]
+        window <- service[Window.Service]
         actual <- window.keys.runCollect
       yield assertTrue(actual == Chunk(1, 2))
-    }.provideSomeLayer[Window.Frame](testKeysStub >>> Window.live)
+    }
+      .provideSomeLayer(testKeysStub >>> Window.live)
+    ,
   )
     .provide(frameStub)
 
