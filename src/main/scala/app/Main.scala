@@ -3,13 +3,13 @@ package app
 import zio.*
 import ZIO.*
 import app.layer.activator.{Activator, GlobalKeyListener}
-import app.layer.window.Window
+import app.layer.window.{Frame, KeysStream, Window}
 
 object Main extends ZIOAppDefault:
   override def run: Task[Any] = application.catchAllCause(debug(_))
 
-  private def application: Task[Any] =
-    (for
+  private def application: Task[Any] = {
+    for
       window <- service[Window.Service]
       f <- serviceWithZIO[Activator.Service]: s =>
         s.stream
@@ -24,10 +24,11 @@ object Main extends ZIOAppDefault:
       _ <- Console.readLine("ENTER to stop")
       _ <- f.interrupt
     yield ()
-      ).provide(
+  }
+    .provide(
+      Frame.live,
+      KeysStream.live,
       Window.live,
-      Window.frame,
-      Window.keyEventStream,
       Activator.live,
       GlobalKeyListener.live,
     )

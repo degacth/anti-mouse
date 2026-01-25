@@ -1,6 +1,6 @@
 package app.streams
 
-import app.layer.window.Window
+import app.layer.window.{Frame, KeysStream, Window}
 import zio.*
 import ZIO.*
 import zio.stream.*
@@ -10,11 +10,7 @@ import java.awt.event.KeyEvent
 import javax.swing.JButton
 
 object WindowSpec extends ZIOSpecDefault:
-  val keyEventsStub = ZLayer.succeed[UStream[KeyEvent]](ZStream(
-    StubbedKey(KeyEvent.KEY_PRESSED, 0)
-  ))
-
-  val frameStub = ZLayer.succeed(new Window.Frame {})
+  val frameStub = ZLayer.succeed(new Frame.Service {})
 
   val testKeysStub = ZLayer.succeed[UStream[KeyEvent]](ZStream(
     StubbedKey(KeyEvent.KEY_PRESSED, 1000)
