@@ -1,8 +1,8 @@
 package app.streams
 
-import app.layer.window.{Frame, KeysStream, Window}
+import app.layer.window.{Frame, Window}
 import zio.*
-import ZIO.*
+import zio.ZIO.*
 import zio.stream.*
 import zio.test.*
 
@@ -10,22 +10,29 @@ import java.awt.event.KeyEvent
 import javax.swing.JButton
 
 object WindowSpec extends ZIOSpecDefault:
-  val frameStub = ZLayer.succeed(new Frame.Service {})
-
-  val testKeysStub = ZLayer.succeed[UStream[KeyEvent]](ZStream(
-    StubbedKey(KeyEvent.KEY_PRESSED, 1000)
-  ))
+  private val frameStub = ZLayer.succeed(new Frame.Service {})
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite(getClass.getSimpleName)(
     test("should emit keys promise in right order") {
       for
         window <- service[Window.Service]
-        actual <- window.keys.runCollect
-      yield assertTrue(actual == Chunk(1, 2))
+        (k, p) <- window.keys.runHead.flatMap(fromOption)
+        result <- p.await
+      yield assertTrue(result == () && k == KeyEvent.VK_W)
     }
-      .provideSomeLayer(testKeysStub >>> Window.live)
+      .provideSomeLayer:
+        ZLayer.succeed(
+          ZStream(
+            StubbedKey(KeyEvent.KEY_PRESSED, KeyEvent.VK_W),
+            StubbedKey(KeyEvent.KEY_PRESSED, KeyEvent.VK_K),
+            StubbedKey(KeyEvent.KEY_RELEASED, KeyEvent.VK_W),
+            StubbedKey(KeyEvent.KEY_RELEASED, KeyEvent.VK_K),
+          )
+        ) >>> Window.live
     ,
   )
-    .provide(frameStub)
+    .provide(
+      frameStub
+    ) @@ TestAspect.timeout(2.seconds)
 
   case class StubbedKey(e: Int, code: Int) extends KeyEvent(JButton(), e, 0, 0, code, Char.MinValue)

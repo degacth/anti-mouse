@@ -4,11 +4,12 @@ import zio.*
 import zio.ZIO.*
 
 import java.awt.*
+import java.awt.event.KeyListener
 import javax.swing.*
 
 object Frame:
   trait Service:
-    def addKeyListener(l: java.awt.event.KeyListener): Unit = ()
+    def addKeyListener(l: KeyListener): Unit = ()
     def activate: UIO[Unit] = unit
     def deactivate: UIO[Unit] = unit
 
@@ -30,6 +31,6 @@ object Frame:
         setVisible(false)
 
     yield new Service:
-      override def addKeyListener(l: java.awt.event.KeyListener): Unit = jFrame.addKeyListener(l)
+      override def addKeyListener(l: KeyListener): Unit = jFrame.addKeyListener(l)
       override def activate: UIO[Unit] = succeed(jFrame.setVisible(true))
       override def deactivate: UIO[Unit] = succeed(jFrame.setVisible(false))

@@ -4,7 +4,7 @@ import zio.*
 import zio.ZIO.*
 import zio.stream.{UStream, ZStream}
 
-import java.awt.event.{KeyAdapter, KeyEvent, KeyListener}
+import java.awt.event.KeyEvent
 
 object Window:
   trait Service:
