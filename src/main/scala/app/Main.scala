@@ -2,7 +2,7 @@ package app
 
 import zio.*
 import ZIO.*
-import app.layer.activator.{Activator, GlobalKeyListener}
+import app.layer.activator.{Activator, GlobalActivator}
 import app.layer.window.{Frame, KeysStream, Window}
 
 object Main extends ZIOAppDefault:
@@ -30,5 +30,5 @@ object Main extends ZIOAppDefault:
       KeysStream.live,
       Window.live,
       Activator.live,
-      GlobalKeyListener.live,
+      GlobalActivator.live,
     )

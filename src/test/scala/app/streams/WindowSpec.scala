@@ -24,7 +24,6 @@ object WindowSpec extends ZIOSpecDefault:
         ZLayer.succeed(
           ZStream(
             StubbedKey(KeyEvent.KEY_PRESSED, KeyEvent.VK_W),
-            StubbedKey(KeyEvent.KEY_PRESSED, KeyEvent.VK_K),
             StubbedKey(KeyEvent.KEY_RELEASED, KeyEvent.VK_W),
             StubbedKey(KeyEvent.KEY_RELEASED, KeyEvent.VK_K),
           )
