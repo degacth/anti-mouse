@@ -32,5 +32,8 @@ object Frame:
         setVisible(false)
     yield new Service:
       override def addKeyListener(l: KeyListener): Unit = jFrame.addKeyListener(l)
-      override def activate: UIO[Unit] = succeed(jFrame.setVisible(true))
+      override def activate: UIO[Unit] =
+        succeed(jFrame.setVisible(true))
+          *> succeed(jFrame.toFront())
+          *> succeed(jFrame.requestFocus())
       override def deactivate: UIO[Unit] = succeed(jFrame.setVisible(false))

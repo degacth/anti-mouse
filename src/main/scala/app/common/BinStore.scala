@@ -14,9 +14,9 @@ object BinStore:
   private def of[T <: Enumic]: Enumic => State[T] = _.bin
 
   extension [T <: Enumic](e: T)
-    def bin: Int = 1 << e.ordinal
+    private def bin: Int = 1 << e.ordinal
     def ++(o: T): State[T] = of(e) + o
-    def state: State[T] = of(e)
+    def store: State[T] = of(e)
 
   extension [T <: Enumic](s: State[T])
     def +(o: T): State[T] = s | o.bin

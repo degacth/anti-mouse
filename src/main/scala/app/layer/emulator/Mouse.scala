@@ -2,36 +2,64 @@ package app.layer.emulator
 
 import zio.*
 import ZIO.*
+import app.common.BinStore
 import app.layer.window.Frame
 
+import java.awt.event.InputEvent
 import java.awt.{MouseInfo, Robot}
 
 object Mouse:
-  enum Direction(val x: Int, val y: Int):
-    case Left extends Direction(-1, 0)
-    case Down extends Direction(0, 1)
-    case Right extends Direction(1, 0)
-    case Up extends Direction(0, -1)
+  enum Direction:
+    case Up, Left, Down, Right
 
   import MouseInfo.{getPointerInfo => pointer}
 
   trait Service:
-    def move(dir: Direction, press: Promise[Nothing, Unit]): UIO[Unit]
+    def startMove(dir: Direction): UIO[Unit]
+    def stopMove(dir: Direction): UIO[Unit]
+    def click: UIO[Unit]
+    def restore: UIO[Unit]
 
-  def live: ZLayer[Frame.Service, Throwable, Service] = ZLayer.scoped:
+  def live: ZLayer[Frame.Service & Modificator.Service, Throwable, Service] = ZLayer.scoped:
     for
       robot <- attempt(Robot())
+      modificator <- service[Modificator.Service]
+      directions <- Ref.make(BinStore.empty[Direction])
     yield new Service:
-      private def moveRecursive(dir: Direction): UIO[Unit] =
+      import BinStore.*
+
+      private val speed = 12
+      private val rate = 1000 / 40
+      private val toDirectionIndexes: (Direction, Direction, BinStore.State[Direction]) => Int =
+        (opposite, forward, dirs) => dirs.present(opposite, 0, _ => -1) + dirs.present(forward, 0, _ => 1)
+
+      private val pointerXY: UIO[(Int, Int)] = succeed(pointer.getLocation).map(i => (i.x, i.y))
+
+      private def move: UIO[Unit] = {
         for
-          (x, y) <- succeed(pointer.getLocation).map(i => (i.x, i.y))
-          _ <- succeed(robot.mouseMove(x + dir.x, y + dir.y))
-          _ <- moveRecursive(dir).delay(100.millis)
+          dirs <- directions.get
+          (x, y) <- pointerXY
+          spd <- modificator.state.map: modState =>
+            speed / modState.present(Modificator.Mod.Shift, 1, _ => 4)
+          _ <- succeed(robot.mouseMove(
+            x + toDirectionIndexes(Direction.Left, Direction.Right, dirs) * spd,
+            y + toDirectionIndexes(Direction.Up, Direction.Down, dirs) * spd,
+          ))
+          _ <- move.delay(rate.millis)
+        yield ()
+      }
+        .whenZIO(directions.get.map(_ != EmptyState)).unit
+
+      override def startMove(dir: Direction): UIO[Unit] =
+        directions.getAndUpdate(_ + dir).flatMap:
+          case BinStore.EmptyState => move.fork *> unit
+          case _ => unit
+
+      override def stopMove(dir: Direction): UIO[Unit] = directions.update(_ - dir)
+      override def click: UIO[Unit] =
+        for
+          _ <- succeed(robot.mousePress(InputEvent.BUTTON1_DOWN_MASK))
+          _ <- succeed(robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK)).delay(10.millis)
         yield ()
 
-      override def move(dir: Direction, press: Promise[Nothing, Unit]): UIO[Unit] =
-        for
-          fiber <- moveRecursive(dir).fork
-          _ <- press.await
-          _ <- fiber.interrupt
-        yield ()
+      override def restore: UIO[Unit] = directions.set(empty)

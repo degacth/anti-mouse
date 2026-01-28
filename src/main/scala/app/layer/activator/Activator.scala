@@ -34,4 +34,8 @@ object Activator:
               case (Some(prev), curr) if curr - prev < actionTimeout => Activated
         ))
     yield new Service:
-      override val stream: Activations = events.changes
+      override val stream: Activations = events
+        .changes
+        .zipWithPrevious
+        .collect:
+          case (Some(_), s) => s

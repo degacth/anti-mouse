@@ -14,7 +14,7 @@ object ActivatorSpec extends ZIOSpecDefault:
       for
         sut <- service[Activator.Service]
         actual <- sut.stream.runCollect
-      yield assertTrue(actual == Chunk(Deactivated, Activated))
+      yield assertTrue(actual == Chunk(Activated))
     }
       .provide(
         ZLayer.succeed(ZStream(
@@ -32,7 +32,7 @@ object ActivatorSpec extends ZIOSpecDefault:
         fiber <- sut.stream.runCollect.fork
         _ <- TestClock.adjust(600.millis)
         actual <- fiber.join
-      yield assertTrue(actual == Chunk(Deactivated))
+      yield assertTrue(actual == Chunk())
     }
       .provide(
         ZLayer.succeed(ZStream(Activator.Status.Activated, Activator.Status.Deactivated) ++ ZStream.fromZIO(

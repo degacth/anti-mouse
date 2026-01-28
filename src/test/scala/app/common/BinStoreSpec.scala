@@ -23,7 +23,7 @@ object BinStoreSpec extends ZIOSpecDefault:
     ,
 
     test("should operate state with values"):
-      val s0: State[Other] = Other.A.state
+      val s0: State[Other] = Other.A.store
       val s1 = s0 + Other.B + Other.C
       val s2 = s1 - Other.A
       val s3 = s1 - Other.A

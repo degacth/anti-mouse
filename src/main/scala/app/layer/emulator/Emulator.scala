@@ -4,9 +4,13 @@ import zio.*
 import ZIO.*
 import app.layer.window.Frame
 
+import java.awt.event.KeyEvent
+
 object Emulator:
   trait Service:
-    def move: (Int, Promise[Nothing, Unit]) => UIO[Unit]
+    def move: KeyEvent => UIO[Unit]
+    def click: UIO[Unit]
+    def restore: UIO[Unit]
 
   private val moveKeys =
     import Mouse.Direction.*
@@ -29,6 +33,15 @@ object Emulator:
     for
       mouse <- service[Mouse.Service]
     yield new Service:
-      override val move: (Int, Promise[Nothing, Unit]) => UIO[Unit] =
-        case (k, p) if moveKeys.contains(k) => mouse.move(moveKeys(k), p)
+      private val isInMoveKeysEvent: (KeyEvent, Int) => Boolean = (e, id) =>
+        (moveKeys contains e.getKeyCode) && e.getID == id
+
+      private val isPressed: KeyEvent => Boolean = e => isInMoveKeysEvent(e, KeyEvent.KEY_PRESSED)
+      private val isReleased: KeyEvent => Boolean = e => isInMoveKeysEvent(e, KeyEvent.KEY_RELEASED)
+
+      override val move: KeyEvent => UIO[Unit] =
+        case e if isPressed(e) => mouse.startMove(moveKeys(e.getKeyCode))
+        case e if isReleased(e) => mouse.stopMove(moveKeys(e.getKeyCode))
         case _ => unit
+      override def click: UIO[Unit] = mouse.click
+      override def restore: UIO[Unit] = mouse.restore
