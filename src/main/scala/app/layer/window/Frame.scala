@@ -9,14 +9,15 @@ import javax.swing.*
 
 object Frame:
   trait Service:
-    def addKeyListener(l: KeyListener): Unit = ()
+    def addKeyListener(l: KeyListener): Unit
     def activate: UIO[Unit] = unit
     def deactivate: UIO[Unit] = unit
 
-  def live: ULayer[Service] = ZLayer.scoped:
+  def live: ZLayer[Any, Throwable, Service] = ZLayer.scoped:
     for
-      jFrame <- acquireRelease(succeed(JFrame()) <* debug("frame created")): frm =>
+      jFrame <- acquireRelease(attempt(JFrame()) <* debug("frame created")): frm =>
         succeed(frm.dispose()) <* debug("frame disposed")
+
       _ <- succeed:
         import jFrame.*
 
@@ -29,7 +30,6 @@ object Frame:
         setBounds(Rectangle(size, size, size, size))
         getContentPane.setBackground(Color.MAGENTA)
         setVisible(false)
-
     yield new Service:
       override def addKeyListener(l: KeyListener): Unit = jFrame.addKeyListener(l)
       override def activate: UIO[Unit] = succeed(jFrame.setVisible(true))

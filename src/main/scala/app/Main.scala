@@ -3,7 +3,9 @@ package app
 import zio.*
 import ZIO.*
 import app.layer.activator.{Activator, GlobalActivator}
-import app.layer.window.{Frame, KeysStream, Window}
+import app.layer.emulator.{Emulator, Mouse}
+import app.layer.window.{Frame, Keys, Window}
+import zio.stream.UStream
 
 object Main extends ZIOAppDefault:
   override def run: Task[Any] = application.catchAllCause(debug(_))
@@ -11,24 +13,25 @@ object Main extends ZIOAppDefault:
   private def application: Task[Any] = {
     for
       window <- service[Window.Service]
-      f <- serviceWithZIO[Activator.Service]: s =>
-        s.stream
-          .foreach:
-            case Activator.Status.Activated => window.activate
-            case Activator.Status.Deactivated => window.deactivate
-          .fork
-      _ <- window.keys.foreach: (k, p) =>
-        (debug(s"pressed $k") *> p.await *> debug(s"released $k")).fork
+      activator <- service[Activator.Service]
+      _ <- activator.stream.foreach:
+        case Activator.Status.Activated => window.activate
+        case Activator.Status.Deactivated => window.deactivate
       .fork
 
-      _ <- Console.readLine("ENTER to stop")
-      _ <- f.interrupt
+      emulator <- service[Emulator.Service]
+      _ <- window.keys.foreach:
+        case (k, p) => emulator.move(k, p).fork
+      .fork
+      _ <- Console.readLine("PRESS ENTER ...")
     yield ()
   }
     .provide(
-      Frame.live,
-      KeysStream.live,
-      Window.live,
-      Activator.live,
+      Mouse.live,
+      Emulator.live,
       GlobalActivator.live,
+      Activator.live,
+      Keys.live,
+      Frame.live,
+      Window.live
     )

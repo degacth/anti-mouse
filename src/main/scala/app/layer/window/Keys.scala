@@ -6,8 +6,10 @@ import zio.stream.{UStream, ZStream}
 
 import java.awt.event.{KeyAdapter, KeyEvent}
 
-object KeysStream:
-  def live: ZLayer[Frame.Service, Nothing, UStream[KeyEvent]] = ZLayer.scoped:
+object Keys:
+  type Stream = UStream[KeyEvent]
+
+  def live: ZLayer[Frame.Service, Nothing, Stream] = ZLayer.scoped:
     serviceWith[Frame.Service]: frame =>
       ZStream.asyncScoped[Any, Nothing, KeyEvent] { cb =>
         succeed:

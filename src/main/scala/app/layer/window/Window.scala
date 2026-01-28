@@ -2,20 +2,22 @@ package app.layer.window
 
 import zio.*
 import zio.ZIO.*
-import zio.stream.{UStream, ZStream}
+import zio.stream.ZStream
 
 import java.awt.event.KeyEvent
 
 object Window:
+  private type KeyPresses = ZStream[Any, Throwable, (Int, Promise[Nothing, Unit])]
+
   trait Service:
     def activate: UIO[Unit]
     def deactivate: UIO[Unit]
-    def keys: ZStream[Any, Throwable, (Int, Promise[Nothing, Unit])]
+    def keys: KeyPresses
 
-  def live: ZLayer[Frame.Service & UStream[KeyEvent], Throwable, Service] = ZLayer.scoped:
+  def live: ZLayer[Frame.Service & Keys.Stream, Throwable, Service] = ZLayer.scoped:
     for
       frame <- service[Frame.Service]
-      keyEvents <- service[UStream[KeyEvent]]
+      keyEvents <- service[Keys.Stream]
       keyEventStream = keyEvents.groupByKey(_.getKeyCode):
         (k, s) =>
           s.mapAccumZIO(Option.empty[Promise[Nothing, Unit]]) {
@@ -29,4 +31,4 @@ object Window:
 
     yield new Service:
       export frame.{activate, deactivate}
-      override def keys: ZStream[Any, Throwable, (Int, Promise[Nothing, Unit])] = keyEventStream
+      override def keys: KeyPresses = keyEventStream
