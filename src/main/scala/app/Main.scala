@@ -4,7 +4,7 @@ import zio.*
 import ZIO.*
 import app.layer.activator.{Activator, GlobalActivator}
 import app.layer.emulator.{Emulator, Modificator, Mouse}
-import app.layer.window.{Frame, Keys, Window}
+import app.layer.window.{Frame, Keys}
 import zio.stream.UStream
 
 object Main extends ZIOAppDefault:
@@ -12,15 +12,15 @@ object Main extends ZIOAppDefault:
 
   private def application: Task[Any] = {
     for
-      window <- service[Window.Service]
+      frame <- service[Frame.Service]
       emulator <- service[Emulator.Service]
       modificator <- service[Modificator.Service]
       activator <- service[Activator.Service]
 
       _ <- activator.stream.foreach:
-        case Activator.Status.Activated => window.activate
+        case Activator.Status.Activated => frame.activate
         case Activator.Status.Deactivated =>
-          window.deactivate
+          frame.deactivate
             *> whenCaseZIO(modificator.state):
               case s if s ? Modificator.Mod.Shift => unit // right click
               case s if s ? Modificator.Mod.Alt => unit
@@ -41,5 +41,4 @@ object Main extends ZIOAppDefault:
       Activator.live,
       Keys.live,
       Frame.live,
-      Window.live,
     )
