@@ -17,6 +17,7 @@ object Mouse:
   trait Service:
     def startMove(dir: Direction): UIO[Unit]
     def stopMove(dir: Direction): UIO[Unit]
+    def scroll(dir: Direction): UIO[Unit]
     def click: UIO[Unit]
     def restore: UIO[Unit]
 
@@ -29,6 +30,7 @@ object Mouse:
       import BinStore.*
 
       private val speed = 12
+      private val scrollSpeed = 1
       private val rate = 1000 / 40
       private val toDirectionIndexes: (Direction, Direction, BinStore.State[Direction]) => Int =
         (opposite, forward, dirs) => dirs.present(opposite, 0, _ => -1) + dirs.present(forward, 0, _ => 1)
@@ -63,3 +65,10 @@ object Mouse:
         yield ()
 
       override def restore: UIO[Unit] = directions.set(empty)
+      override def scroll(dir: Direction): UIO[Unit] =
+        val amt = dir match
+          case Direction.Up => -1
+          case Direction.Down => 1
+          case _ => 0
+
+        succeed(robot.mouseWheel(amt * scrollSpeed))

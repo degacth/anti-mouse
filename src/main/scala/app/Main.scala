@@ -29,7 +29,7 @@ object Main extends ZIOAppDefault:
             *> modificator.restore
       .fork
 
-      _ <- serviceWithZIO[Keys.Stream](_.foreach(emulator.move(_))).fork
+      _ <- serviceWithZIO[Keys.Stream](_.foreach(k => modificator.state.flatMap(s => emulator.key(k, s)))).fork
       _ <- Console.readLine("PRESS ENTER ...")
     yield ()
   }
