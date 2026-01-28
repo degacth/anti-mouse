@@ -11,6 +11,7 @@ object Emulator:
     def move: KeyEvent => UIO[Unit]
     def click: UIO[Unit]
     def restore: UIO[Unit]
+    def dblClick: UIO[Unit]
 
   private val moveKeys =
     import Mouse.Direction.*
@@ -45,3 +46,4 @@ object Emulator:
         case _ => unit
       override def click: UIO[Unit] = mouse.click
       override def restore: UIO[Unit] = mouse.restore
+      override def dblClick: UIO[Unit] = mouse.click *> mouse.click.delay(100.millis)

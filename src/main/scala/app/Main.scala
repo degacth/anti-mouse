@@ -22,7 +22,7 @@ object Main extends ZIOAppDefault:
         case Activator.Status.Deactivated =>
           frame.deactivate
             *> whenCaseZIO(modificator.state):
-              case s if s ? Modificator.Mod.Shift => unit // right click
+              case s if s ? Modificator.Mod.Shift => emulator.dblClick
               case s if s ? Modificator.Mod.Alt => unit
               case _ => emulator.click
             *> emulator.restore
