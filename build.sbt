@@ -18,5 +18,9 @@ lazy val root = project
       "dev.zio" %% "zio-test" % zioVersion % Test,
       "dev.zio" %% "zio-test-sbt" % zioVersion % Test,
       "dev.zio" %% "zio-test-magnolia" % zioVersion % Test,
+    ),
+
+    javaOptions ++= Seq(
+      "--enable-native-access=ALL-UNNAMED",
     )
   )
