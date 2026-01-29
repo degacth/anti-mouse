@@ -21,9 +21,9 @@ object Mouse:
     def click: UIO[Unit]
     def restore: UIO[Unit]
 
-  def live: ZLayer[Frame.Service & Modificator.Service, Throwable, Service] = ZLayer.scoped:
+  def live: ZLayer[Modificator.Service, Throwable, Service] = ZLayer.scoped:
     for
-      robot <- attempt(Robot())
+      robot <- attemptBlockingIO(Robot())
       modificator <- service[Modificator.Service]
       directions <- Ref.make(BinStore.empty[Direction])
     yield new Service:

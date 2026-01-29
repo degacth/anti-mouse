@@ -15,7 +15,7 @@ object Frame:
 
   def live: ZLayer[Any, Throwable, Service] = ZLayer.scoped:
     for
-      jFrame <- acquireRelease(attempt(JFrame()) <* debug("frame created")): frm =>
+      jFrame <- acquireRelease(attemptBlockingIO(JFrame()) <* debug("frame created")): frm =>
         succeed(frm.dispose()) <* debug("frame disposed")
 
       _ <- succeed:
