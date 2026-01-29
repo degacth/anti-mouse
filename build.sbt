@@ -1,5 +1,6 @@
 val scala3Version = "3.8.1"
 val zioVersion = "2.1.24"
+val zioConfig = "4.0.6"
 
 lazy val root = project
   .in(file("."))
@@ -13,6 +14,13 @@ lazy val root = project
     libraryDependencies ++= Seq(
       "dev.zio" %% "zio" % zioVersion,
       "dev.zio" %% "zio-streams" % zioVersion,
+
+      "dev.zio" %% "zio-config" % zioConfig,
+      "dev.zio" %% "zio-config-magnolia" % zioConfig,
+      "dev.zio" %% "zio-config-typesafe" % zioConfig,
+      "dev.zio" %% "zio-config-refined" % zioConfig,
+
+      "dev.zio" %% "zio-config" % "4.0.6",
       "com.github.kwhat" % "jnativehook" % "2.2.2",
 
       "dev.zio" %% "zio-test" % zioVersion % Test,

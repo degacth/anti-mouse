@@ -3,7 +3,7 @@ package app.layer.emulator
 import zio.*
 import ZIO.*
 import app.common.BinStore
-import app.layer.window.Frame
+import app.parameters.Parameters
 
 import java.awt.event.InputEvent
 import java.awt.{MouseInfo, Robot}
@@ -21,17 +21,17 @@ object Mouse:
     def click: UIO[Unit]
     def restore: UIO[Unit]
 
-  def live: ZLayer[Modificator.Service, Throwable, Service] = ZLayer.scoped:
+  def live: ZLayer[Modificator.Service & Parameters, Throwable, Service] = ZLayer.scoped:
     for
+      parameters <- service[Parameters]
       robot <- attemptBlockingIO(Robot())
       modificator <- service[Modificator.Service]
       directions <- Ref.make(BinStore.empty[Direction])
     yield new Service:
       import BinStore.*
 
-      private val speed = 12
       private val scrollSpeed = 1
-      private val rate = 1000 / 40
+      private val rate = 1000 / parameters.moveRate
       private val toDirectionIndexes: (Direction, Direction, BinStore.State[Direction]) => Int =
         (opposite, forward, dirs) => dirs.present(opposite, 0, _ => -1) + dirs.present(forward, 0, _ => 1)
 
@@ -41,11 +41,11 @@ object Mouse:
         for
           dirs <- directions.get
           (x, y) <- pointerXY
-          spd <- modificator.state.map: modState =>
-            speed / modState.present(Modificator.Mod.Shift, 1, _ => 4)
+          speed <- modificator.state.map: modState =>
+            parameters.cursorSpeed / modState.present(Modificator.Mod.Shift, 1, _ => 4)
           _ <- succeed(robot.mouseMove(
-            x + toDirectionIndexes(Direction.Left, Direction.Right, dirs) * spd,
-            y + toDirectionIndexes(Direction.Up, Direction.Down, dirs) * spd,
+            x + toDirectionIndexes(Direction.Left, Direction.Right, dirs) * speed,
+            y + toDirectionIndexes(Direction.Up, Direction.Down, dirs) * speed,
           ))
           _ <- move.delay(rate.millis)
         yield ()
