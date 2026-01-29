@@ -61,7 +61,7 @@ object Mouse:
       override def click: UIO[Unit] =
         for
           _ <- succeed(robot.mousePress(InputEvent.BUTTON1_DOWN_MASK))
-          _ <- succeed(robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK)).delay(10.millis)
+          _ <- succeed(robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK)).delay(30.millis)
         yield ()
 
       override def restore: UIO[Unit] = directions.set(empty)

@@ -22,15 +22,15 @@ object Main extends ZIOAppDefault:
         case Activator.Status.Deactivated =>
           frame.deactivate
             *> whenCaseZIO(modificator.state):
-              case s if s ? Modificator.Mod.Shift => emulator.dblClick
-              case s if s ? Modificator.Mod.Alt => unit
-              case _ => emulator.click
-            *> emulator.restore
+            case s if s ? Modificator.Mod.Shift => emulator.dblClick
+            case s if s ? Modificator.Mod.Alt => unit
+            case _ => emulator.click
+          *> emulator.restore
             *> modificator.restore
       .fork
 
       _ <- serviceWithZIO[Keys.Stream](_.foreach(k => modificator.state.flatMap(s => emulator.key(k, s)))).fork
-      _ <- Console.readLine("PRESS ENTER ...")
+      _ <- Console.readLine("PRESS ENTER TO EXIT ...")
     yield ()
   }
     .provide(
