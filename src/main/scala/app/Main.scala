@@ -7,24 +7,15 @@ import app.layer.emulator.{Emulator, Modificator, Mouse}
 import app.layer.window.{Frame, Keys}
 import app.parameters.Parameters
 import zio.stream.UStream
-import zio.config.typesafe.TypesafeConfigProvider.*
-
-import java.nio.file.Paths
 
 object Main extends ZIOAppDefault:
-  private val configFileName = ".anti-mouse.conf"
 
-  override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
-    Runtime.setConfigProvider(fromHoconFilePath("src/main/resources/application.conf"))
+  override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] = Parameters.configProvider
 
   override def run: Task[Any] = application.catchAllCause(c => logError(c.prettyPrint))
 
   private def application: Task[Any] = {
     for
-      configDir <- System.property("user.home").orElse(System.property("user.dir"))
-      configFile <- attempt:
-        configDir.fold(Paths.get(".", configFileName))(Paths.get(_, configFileName))
-      _ <- debug(configFile.toFile)
       frame <- service[Frame.Service]
       emulator <- service[Emulator.Service]
       modificator <- service[Modificator.Service]
@@ -42,7 +33,7 @@ object Main extends ZIOAppDefault:
             *> modificator.restore
       .fork
 
-      _ <- serviceWithZIO[Keys.Stream](_.foreach(k => modificator.state.flatMap(s => emulator.key(k, s)))).fork
+      _ <- serviceWithZIO[Keys.Stream](_.foreach(k => modificator.state.flatMap(emulator.key(k, _)))).fork
       _ <- Console.readLine("PRESS ENTER TO EXIT ...")
     yield ()
   }
