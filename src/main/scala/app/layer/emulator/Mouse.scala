@@ -21,6 +21,15 @@ object Mouse:
     def click: UIO[Unit]
     def restore: UIO[Unit]
 
+    def isFasterMove: Modificator.State => Boolean = s =>
+      s ? Modificator.Mod.Alt && s ? Modificator.Mod.Shift
+
+    def isSlowerMove: Modificator.State => Boolean = s =>
+      !(s ? Modificator.Mod.Alt) && s ? Modificator.Mod.Shift
+
+    def isScroll: Modificator.State => Boolean = s =>
+      s ? Modificator.Mod.Alt && !(s ? Modificator.Mod.Shift)
+
   def live: ZLayer[Modificator.Service & Parameters, Throwable, Service] = ZLayer.scoped:
     for
       parameters <- service[Parameters]

@@ -8,17 +8,19 @@ import app.common.BinStore
 import java.awt.event.KeyEvent
 
 object Modificator:
+  type State = BinStore.State[Mod]
+  
   trait Service:
     def hasShift: UIO[Boolean]
     def hasAlt: UIO[Boolean]
-    def state: UIO[BinStore.State[Mod]]
+    def state: UIO[State]
     def restore: UIO[Unit]
 
   enum Mod:
     case Shift, Alt
 
   val live: ZLayer[Keys.Stream, Nothing, Service] = ZLayer.scoped:
-    import BinStore.*
+    import BinStore.{State => _, *}
 
     for
       store <- Ref.make(BinStore.empty[Mod])
@@ -38,5 +40,5 @@ object Modificator:
     yield new Service:
       override def hasShift: UIO[Boolean] = store.get.map(_ ? Mod.Shift)
       override def hasAlt: UIO[Boolean] = store.get.map(_ ? Mod.Alt)
-      override def state: UIO[State[Mod]] = store.get
+      override def state: UIO[State] = store.get
       override def restore: UIO[Unit] = store.set(empty)

@@ -2,14 +2,13 @@ package app.layer.emulator
 
 import zio.*
 import ZIO.*
-import app.common.BinStore
 import app.layer.window.Frame
 
 import java.awt.event.KeyEvent
 
 object Emulator:
   trait Service:
-    def key: (KeyEvent, BinStore.State[Modificator.Mod]) => UIO[Unit]
+    def key: (KeyEvent, Modificator.State) => UIO[Unit]
     def click: UIO[Unit]
     def restore: UIO[Unit]
     def dblClick: UIO[Unit]
@@ -44,8 +43,8 @@ object Emulator:
         import Mouse.Direction.{Up, Down}
         moveKeys.get(e.getKeyCode).exists(v => v == Up || v == Down)
 
-      override val key: (KeyEvent, BinStore.State[Modificator.Mod]) => UIO[Unit] =
-        case (e, mod) if isVerticalKey(e) && mod ? Modificator.Mod.Alt && !(mod ? Modificator.Mod.Shift) => mouse.scroll(moveKeys(e.getKeyCode))
+      override val key: (KeyEvent, Modificator.State) => UIO[Unit] =
+        case (e, mod) if isVerticalKey(e) && mouse.isScroll(mod) => mouse.scroll(moveKeys(e.getKeyCode))
         case (e, _) if isPressed(e) => mouse.startMove(moveKeys(e.getKeyCode))
         case (e, _) if isReleased(e) => mouse.stopMove(moveKeys(e.getKeyCode))
         case _ => unit
