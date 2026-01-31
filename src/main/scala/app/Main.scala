@@ -20,6 +20,9 @@ object Main extends ZIOAppDefault:
       emulator <- service[Emulator.Service]
       modificator <- service[Modificator.Service]
       activator <- service[Activator.Service]
+      
+      globalKeyEvents <- service[Activator.GlobalKeyEvents]
+      _ <- globalKeyEvents.runDrain.fork
 
       _ <- activator.stream.foreach:
         case Activator.Status.Activated => frame.activate

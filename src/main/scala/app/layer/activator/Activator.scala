@@ -17,6 +17,7 @@ object Activator:
     case Activated, Deactivated
 
   type Activations = ZStream[Any, Throwable, Activator.Status]
+  type GlobalKeyEvents = ZStream[Any, Throwable, NativeKeyEvent]
 
   trait Service:
     def stream: Activations
