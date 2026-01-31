@@ -41,8 +41,10 @@ object Mouse:
         for
           dirs <- directions.get
           (x, y) <- pointerXY
-          speed <- modificator.state.map: modState =>
-            parameters.cursorSpeed / modState.present(Modificator.Mod.Shift, 1, _ => 4)
+          speed <- modificator.state.map:
+            case mod if mod ? Modificator.Mod.Shift && mod ? Modificator.Mod.Alt => parameters.cursorSpeed * 2
+            case mod if mod ? Modificator.Mod.Shift => parameters.cursorSpeed / 4
+            case _ => parameters.cursorSpeed
           _ <- succeed(robot.mouseMove(
             x + toDirectionIndexes(Direction.Left, Direction.Right, dirs) * speed,
             y + toDirectionIndexes(Direction.Up, Direction.Down, dirs) * speed,

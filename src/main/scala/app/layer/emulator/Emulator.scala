@@ -45,7 +45,7 @@ object Emulator:
         moveKeys.get(e.getKeyCode).exists(v => v == Up || v == Down)
 
       override val key: (KeyEvent, BinStore.State[Modificator.Mod]) => UIO[Unit] =
-        case (e, mod) if isVerticalKey(e) && mod ? Modificator.Mod.Alt => mouse.scroll(moveKeys(e.getKeyCode))
+        case (e, mod) if isVerticalKey(e) && mod ? Modificator.Mod.Alt && !(mod ? Modificator.Mod.Shift) => mouse.scroll(moveKeys(e.getKeyCode))
         case (e, _) if isPressed(e) => mouse.startMove(moveKeys(e.getKeyCode))
         case (e, _) if isReleased(e) => mouse.stopMove(moveKeys(e.getKeyCode))
         case _ => unit
