@@ -2,11 +2,14 @@ val scala3Version = "3.8.1"
 val zioVersion = "2.1.24"
 val zioConfig = "4.0.6"
 
+enablePlugins(JavaAppPackaging)
+
 lazy val root = project
   .in(file("."))
   .settings(
     name := "anti-mouse",
     version := "0.0.0",
+    maintainer := "degacth@yandex.ru",
     scalaVersion := scala3Version,
     fork := true,
     connectInput := true,
@@ -20,7 +23,6 @@ lazy val root = project
       "dev.zio" %% "zio-config-typesafe" % zioConfig,
       "dev.zio" %% "zio-config-refined" % zioConfig,
 
-      "dev.zio" %% "zio-config" % "4.0.6",
       "com.github.kwhat" % "jnativehook" % "2.2.2",
 
       "dev.zio" %% "zio-test" % zioVersion % Test,
