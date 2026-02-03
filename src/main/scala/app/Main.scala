@@ -42,9 +42,9 @@ object Main extends ZIOAppDefault:
         .changesWith((e1, e2) => e1.getKeyCode == e2.getKeyCode && e1.getID == e2.getID)
         .tap:
           case e if e.getKeyCode == NativeKeyEvent.VC_SPACE && e.getID == NativeKeyEvent.NATIVE_KEY_PRESSED =>
-            forceMouse.set(true)
+            forceMouse.set(true) *> frame.highlight
           case e if e.getKeyCode == NativeKeyEvent.VC_SPACE && e.getID == NativeKeyEvent.NATIVE_KEY_RELEASED =>
-            forceMouse.set(false)
+            forceMouse.set(false) *> frame.offHighlight
           case _ => ZIO.unit
 
         .mapZIO(e => forceMouse.get.map((_, e)))
