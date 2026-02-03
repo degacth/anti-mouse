@@ -2,7 +2,6 @@ package app.layer.emulator
 
 import zio.*
 import ZIO.*
-import app.layer.window.Frame
 
 import java.awt.event.KeyEvent
 
@@ -28,7 +27,7 @@ object Emulator:
       VK_H -> Left,
     )
 
-  private type Deps = Mouse.Service & Frame.Service
+  private type Deps = Mouse.Service
 
   def live: ZLayer[Deps, Throwable, Service] = ZLayer.scoped:
     for
