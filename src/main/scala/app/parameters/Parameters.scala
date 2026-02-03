@@ -6,7 +6,12 @@ import zio.config.typesafe.TypesafeConfigProvider.fromHoconFile
 
 import java.nio.file.{Files, Paths}
 
-case class Parameters(cursorSpeed: Int, moveRate: Int)
+case class Cursor(speed: Int, rate: Int)
+case class MouseLive(enabled: Boolean, period: Int)
+case class Parameters(
+                       cursor: Cursor,
+                       mouseLive: MouseLive,
+                     )
 
 object Parameters:
   private val paramsFilename = ".anti-mouse.conf"

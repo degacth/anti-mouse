@@ -20,6 +20,7 @@ object Mouse:
     def scroll(dir: Direction): UIO[Unit]
     def click: UIO[Unit]
     def restore: UIO[Unit]
+    def randomMove: UIO[Unit]
 
     def isFasterMove: Modificator.State => Boolean = s =>
       s ? Modificator.Mod.Alt && s ? Modificator.Mod.Shift
@@ -39,8 +40,14 @@ object Mouse:
     yield new Service:
       import BinStore.*
 
+      private val steps = for
+        x <- -1 to 1
+        y <- -1 to 1
+        if x != 0 && y != 0
+      yield (x, y)
+
       private val scrollSpeed = 1
-      private val rate = 1000 / parameters.moveRate
+      private val rate = 1000 / parameters.cursor.rate
       private val toDirectionIndexes: (Direction, Direction, BinStore.State[Direction]) => Int =
         (opposite, forward, dirs) => dirs.present(opposite, 0, _ => -1) + dirs.present(forward, 0, _ => 1)
 
@@ -51,9 +58,9 @@ object Mouse:
           dirs <- directions.get
           (x, y) <- pointerXY
           speed <- modificator.state.map:
-            case mod if mod ? Modificator.Mod.Shift && mod ? Modificator.Mod.Alt => parameters.cursorSpeed * 2
-            case mod if mod ? Modificator.Mod.Shift => parameters.cursorSpeed / 4
-            case _ => parameters.cursorSpeed
+            case mod if mod ? Modificator.Mod.Shift && mod ? Modificator.Mod.Alt => parameters.cursor.speed * 2
+            case mod if mod ? Modificator.Mod.Shift => parameters.cursor.speed / 4
+            case _ => parameters.cursor.speed
           _ <- succeed(robot.mouseMove(
             x + toDirectionIndexes(Direction.Left, Direction.Right, dirs) * speed,
             y + toDirectionIndexes(Direction.Up, Direction.Down, dirs) * speed,
@@ -83,3 +90,10 @@ object Mouse:
           case _ => 0
 
         succeed(robot.mouseWheel(amt * scrollSpeed))
+
+      override def randomMove: UIO[Unit] =
+        for
+          (x, y) <- pointerXY
+          (xDiff, yDiff) <- Random.nextIntBounded(steps.size).map(steps)
+          _ <- succeed(robot.mouseMove(x + xDiff, y + yDiff))
+        yield ()

@@ -2,6 +2,8 @@ package app.layer.emulator
 
 import zio.*
 import ZIO.*
+import app.parameters.Parameters
+import zio.stream.ZStream
 
 import java.awt.event.KeyEvent
 
@@ -27,11 +29,19 @@ object Emulator:
       VK_H -> Left,
     )
 
-  private type Deps = Mouse.Service
+  private type Deps = Mouse.Service & Parameters
 
   def live: ZLayer[Deps, Throwable, Service] = ZLayer.scoped:
     for
+      parameters <- service[Parameters]
       mouse <- service[Mouse.Service]
+
+      preventLockScreen <- ZIO.when(parameters.mouseLive.enabled):
+        ZStream
+          .repeatWithSchedule((), Schedule.spaced(parameters.mouseLive.period.minutes))
+          .foreach(_ => mouse.randomMove)
+          .fork
+
     yield new Service:
       private val isInMoveKeysEvent: (KeyEvent, Int) => Boolean = (e, id) =>
         (moveKeys contains e.getKeyCode) && e.getID == id
