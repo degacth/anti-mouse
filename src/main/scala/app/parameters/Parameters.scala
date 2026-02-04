@@ -6,7 +6,7 @@ import zio.config.typesafe.TypesafeConfigProvider.fromHoconFile
 
 import java.nio.file.{Files, Paths}
 
-case class Cursor(speed: Int, rate: Int)
+case class Cursor(speed: Int, rate: Int, clickDelay: Int)
 case class MouseLive(enabled: Boolean, period: Int)
 case class Parameters(
                        cursor: Cursor,

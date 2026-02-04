@@ -1,6 +1,5 @@
 package app.layer.emulator
 
-import app.layer.window.Keys
 import zio.*
 import ZIO.*
 import app.common.BinStore
@@ -20,7 +19,7 @@ object Modificator:
   enum Mod:
     case Shift, Alt
 
-  val live: ZLayer[Keys.Stream, Nothing, Service] = ZLayer.scoped:
+  val live: ZLayer[Any, Nothing, Service] = ZLayer.scoped:
     import BinStore.{State => _, *}
 
     for
