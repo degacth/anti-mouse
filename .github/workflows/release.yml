@@ -1,0 +1,44 @@
+name: Anti Mouse CI/CD and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Устанавливаем ЖДК
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: sbt
+
+      - name: Наливаем "Сбитень"
+        uses: sbt/setup-sbt@v1
+
+      - name: Освобождаем мышь
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+      - name: Загружаем мышеловку
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./target/universal/anti-mouse-${{ github.ref }}.zip
+          asset_name: anti-mouse-${{ github.ref }}.zip
+          asset_content_type: application/zip-archive

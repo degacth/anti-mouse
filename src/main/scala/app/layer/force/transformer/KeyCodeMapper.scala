@@ -1,4 +1,4 @@
-package app.layer.activator.transformer
+package app.layer.force.transformer
 
 import com.github.kwhat.jnativehook.NativeInputEvent
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent
@@ -6,7 +6,7 @@ import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent
 import java.awt.event.{InputEvent, KeyEvent}
 
 object KeyCodeMapper {
-  val nativeToKey: Map[Int, Int] = Map(
+  private val nativeToKey: Map[Int, Int] = Map(
     // Ids
     NativeKeyEvent.NATIVE_KEY_PRESSED -> KeyEvent.KEY_PRESSED,
     NativeKeyEvent.NATIVE_KEY_RELEASED -> KeyEvent.KEY_RELEASED,

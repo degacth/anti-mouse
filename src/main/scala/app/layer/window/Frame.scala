@@ -15,18 +15,22 @@ object Frame:
     def highlight: UIO[Unit]
     def offHighlight: UIO[Unit]
 
+  private val jFrame = JFrame() // Due to "A fatal error has been detected by the Java Runtime Environment"
+
   def live: ZLayer[Any, Throwable, Service] = ZLayer.scoped:
     val normalColor = Color.MAGENTA
     val highlightColor = Color.RED
     for
-      jFrame <- acquireRelease(attemptBlockingIO(JFrame()) <* debug("frame created")): frm =>
+      frame <- acquireRelease(attemptBlocking(jFrame) <* debug("frame created")): frm =>
         succeed(frm.dispose()) <* debug("frame disposed")
 
       _ <- succeed:
-        import jFrame.*
+        import frame.*
+        import buildinfo.BuildInfo
 
+        setIconImage(Toolkit.getDefaultToolkit.getImage(this.getClass.getClassLoader.getResource("icon.png")))
         setFocusable(true)
-        setTitle("AntiMouse")
+        setTitle(BuildInfo.name)
         setDefaultCloseOperation(WindowConstants.HIDE_ON_CLOSE)
         setUndecorated(true)
         setAlwaysOnTop(true)
@@ -36,11 +40,11 @@ object Frame:
         setVisible(false)
 
     yield new Service:
-      override def addKeyListener(l: KeyListener): Unit = jFrame.addKeyListener(l)
+      override def addKeyListener(l: KeyListener): Unit = frame.addKeyListener(l)
       override def activate: UIO[Unit] =
-        succeed(jFrame.setVisible(true))
-          *> succeed(jFrame.toFront())
-          *> succeed(jFrame.requestFocus())
-      override def deactivate: UIO[Unit] = succeed(jFrame.setVisible(false))
-      override def highlight: UIO[Unit] = succeed(jFrame.getContentPane.setBackground(highlightColor))
-      override def offHighlight: UIO[Unit] = succeed(jFrame.getContentPane.setBackground(normalColor))
+        succeed(frame.setVisible(true))
+          *> succeed(frame.toFront())
+          *> succeed(frame.requestFocus())
+      override def deactivate: UIO[Unit] = succeed(frame.setVisible(false))
+      override def highlight: UIO[Unit] = succeed(frame.getContentPane.setBackground(highlightColor))
+      override def offHighlight: UIO[Unit] = succeed(frame.getContentPane.setBackground(normalColor))
