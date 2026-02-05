@@ -8,7 +8,7 @@ lazy val root = project
   .enablePlugins(JavaAppPackaging, BuildInfoPlugin)
   .settings(
     name := "anti-mouse",
-    version := "0.0.2",
+    version := "0.0.3",
     maintainer := "degacth@yandex.ru",
     scalaVersion := scala3Version,
     fork := true,
