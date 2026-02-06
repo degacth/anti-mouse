@@ -4,10 +4,12 @@ permissions:
   contents: write
   pull-requests: write
 
-on:
-  push:
-    tags:
-      - 'v*'
+on: [ push ]
+
+#on:
+#  push:
+#    tags:
+#      - 'v*'
 
 jobs:
   build:
@@ -44,15 +46,16 @@ jobs:
 
       - name: Определяем ФИО
         run: |
-          PACKAGE_FILE=$(ls ./target/universal/anti-mouse-*.zip | head -n 1)
-          echo "PACKAGE_FILE=$PACKAGE_FILE" >> $GITHUB_ENV
-          echo "PACKAGE_ASSET_FILE=$(basename $PACKAGE_FILE)" >> $GITHUB_ENV
-          echo "Package file: $PACKAGE_FILE" >> $GITHUB_OUTPUT
+          BIN_FILE=$(ls ./target/universal/anti-mouse-*.zip | head -n 1)
+          echo "BIN_FILE=$BIN_FILE" >> $GITHUB_ENV
+          echo "PACKAGE_ASSET_FILE=$(basename $BIN_FILE)" >> $GITHUB_ENV
+          echo "Found package file: $BIN_FILE"
+        shell: bash
 
       - name: Загружаем мышеловку
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ env.PACKAGE_FILE }}
+          asset_path: ${{ env.BIN_FILE }}
           asset_name: ${{ env.PACKAGE_ASSET_FILE }}
           asset_content_type: application/zip
