@@ -8,7 +8,7 @@ lazy val root = project
   .enablePlugins(JavaAppPackaging, BuildInfoPlugin)
   .settings(
     name := "anti-mouse",
-    version := "0.0.3",
+    version := "0.0.4",
     maintainer := "degacth@yandex.ru",
     scalaVersion := scala3Version,
     fork := true,
@@ -33,4 +33,6 @@ lazy val root = project
     javaOptions ++= Seq(
       "--enable-native-access=ALL-UNNAMED",
     ),
+
+    Universal / packageName := name.value
   )
