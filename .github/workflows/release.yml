@@ -15,6 +15,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Устанавливаем ЖДК
         uses: actions/setup-java@v3
@@ -37,12 +39,20 @@ jobs:
           draft: false
           prerelease: false
 
+      - name: Создаём универсальный пакет
+        run: sbt "Universal / packageBin"
+
+      - name: Определяем ФИО
+        run: |
+          PACKAGE_FILE=$(ls ./target/universal/anti-mouse-*.zip | head -n 1)
+          echo "PACKAGE_FILE=$PACKAGE_FILE" >> $GITHUB_ENV
+          echo "PACKAGE_ASSET_FILE=$(basename $PACKAGE_FILE)" >> $GITHUB_ENV
+          echo "Package file: $PACKAGE_FILE" >> $GITHUB_OUTPUT
+
       - name: Загружаем мышеловку
         uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./target/universal/anti-mouse.zip
-          asset_name: anti-mouse.zip
-          asset_content_type: application/zip-archive
+          asset_path: ${{ env.PACKAGE_FILE }}
+          asset_name: ${{ env.PACKAGE_ASSET_FILE }}
+          asset_content_type: application/zip

@@ -5,10 +5,9 @@ val zioConfig = "4.0.6"
 
 lazy val root = project
   .in(file("."))
-  .enablePlugins(JavaAppPackaging, BuildInfoPlugin)
+  .enablePlugins(JavaAppPackaging, BuildInfoPlugin, DynVerPlugin)
   .settings(
     name := "anti-mouse",
-    version := "0.0.4",
     maintainer := "degacth@yandex.ru",
     scalaVersion := scala3Version,
     fork := true,
@@ -33,6 +32,4 @@ lazy val root = project
     javaOptions ++= Seq(
       "--enable-native-access=ALL-UNNAMED",
     ),
-
-    Universal / packageName := name.value
   )
